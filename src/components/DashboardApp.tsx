@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Copy, Plus, Activity, Youtube, Trash2, ExternalLink, Loader2, Link as LinkIcon, BarChart3, Check, Moon, Sun, QrCode, Download } from 'lucide-react';
+import { Copy, Plus, Activity, Youtube, Trash2, ExternalLink, Loader2, Link as LinkIcon, BarChart3, Check, QrCode, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils/cn';
 import QRCode from "react-qr-code";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { Toaster, toast } from 'sonner';
 
 export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) {
     const [links, setLinks] = useState(initialLinks);
@@ -13,11 +14,15 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+    const theme = 'light';
     const [activeQrId, setActiveQrId] = useState<string | null>(null);
     const [activeChartId, setActiveChartId] = useState<string | null>(null);
     const [chartData, setChartData] = useState<any[]>([]);
     const [chartLoading, setChartLoading] = useState(false);
+
+    // Modal y Selección
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [selectedLinks, setSelectedLinks] = useState<string[]>([]);
 
     // Meta-datos personalizados
     const [customTitle, setCustomTitle] = useState('');
@@ -26,26 +31,6 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     const currentDomain = typeof window !== 'undefined' ? window.location.origin : '';
-
-    useEffect(() => {
-        // Sincronizar estado inicial con el DOM que Astro procesó
-        if (document.documentElement.classList.contains('dark')) {
-            setTheme('dark');
-        } else {
-            setTheme('light');
-        }
-    }, []);
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        if (newTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    };
 
     const generateAlias = () => {
         return Math.random().toString(36).substring(2, 8);
@@ -82,8 +67,10 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             setCustomDescription('');
             setCustomImage('');
             setShowAdvanced(false);
+            toast.success('¡Enlace potentísimo creado!');
         } catch (err: any) {
             setError(err.message);
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }
@@ -92,13 +79,24 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const copyToClipboard = async (text: string, id: string) => {
         await navigator.clipboard.writeText(text);
         setCopiedId(id);
+        toast.success("Enlace copiado al portapapeles");
         setTimeout(() => setCopiedId(null), 2000);
     };
 
     const deleteLink = async (id: string) => {
-        if (!confirm('¿Estás seguro de eliminar este enlace de Saca?')) return;
+        // Optimistic UI: Ocultamos el enlace instantáneamente
+        const previousLinks = [...links];
         setLinks(links.filter(l => l.id !== id));
-        await fetch(`/api/links?id=${id}`, { method: 'DELETE' });
+
+        try {
+            const res = await fetch(`/api/links?id=${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error("Error al eliminar");
+            toast.success("Enlace eliminado permanente");
+        } catch (err) {
+            // Si falla en el servidor, revertimos la UI
+            setLinks(previousLinks);
+            toast.error("Falló la eliminación. El enlace ha regresado.");
+        }
     };
 
     const downloadQR = (linkId: string, alias: string) => {
@@ -151,195 +149,289 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
         }
     };
 
+    const handleSelectLink = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedLinks([...selectedLinks, id]);
+        } else {
+            setSelectedLinks(selectedLinks.filter(l => l !== id));
+        }
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedLinks(links.map(l => l.id));
+        } else {
+            setSelectedLinks([]);
+        }
+    };
+
     return (
-        <div className="w-full flex flex-col xl:flex-row gap-8 lg:gap-12 items-start relative z-10 pb-20">
+        <div className="w-full max-w-5xl mx-auto items-start relative z-10 pb-20 pt-8">
+            <Toaster position="bottom-right" richColors theme="light" className="font-display" />
 
-            {/* Columna Izquierda: Generador Flotante (Apple Material) */}
-            <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full xl:w-[420px] flex-shrink-0 bg-white dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/5 shadow-2xl shadow-black/5 dark:shadow-black/50 rounded-[2rem] p-8 xl:p-10 sticky top-10"
-            >
-                {/* Toggle Theme Positioned Absolutamente en Móvil, Header en Desktop */}
-                <button
-                    onClick={toggleTheme}
-                    className="absolute top-8 right-8 xl:hidden flex items-center justify-center w-10 h-10 rounded-full border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
-
-                <div className="mb-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EB3333]/10 border border-[#EB3333]/20 mb-5">
-                        <Plus className="w-4 h-4 text-[#EB3333]" />
-                        <span className="text-[11px] font-bold text-[#EB3333] uppercase tracking-widest">Crear Saca Link</span>
-                    </div>
-                    <h2 className="text-3xl font-display font-semibold transition-colors text-zinc-900 dark:text-white tracking-tight">Potenciar URL</h2>
-                    <p className="text-[15px] text-zinc-500 dark:text-zinc-400 mt-3 leading-relaxed">Pega la URL del video e inyectaremos la mejor vía de redirección nativa en iOS y Android.</p>
+            {/* Dashboard Topbar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-8 border-b border-zinc-200/60 gap-4">
+                <div>
+                    <h2 className="text-3xl font-display font-semibold text-zinc-900 tracking-tight flex items-center gap-3">
+                        Dashboard
+                    </h2>
+                    <p className="text-[15px] text-zinc-500 mt-2 leading-relaxed">
+                        Gestiona tus Smart Links, monitorea tráfico y configura metadatos.
+                    </p>
                 </div>
 
-                <form onSubmit={createLink} className="space-y-7">
-                    <div className="group">
-                        <label className="block text-[11px] font-bold tracking-[0.14em] text-zinc-500 mb-3 transition-colors group-focus-within:text-[#EB3333] uppercase">
-                            Original YouTube URL
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Youtube className="h-5 w-5 text-zinc-400 dark:text-zinc-500 group-focus-within:text-[#EB3333] transition-colors" />
-                            </div>
-                            <input
-                                type="url"
-                                required
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                className="block w-full pl-[3.25rem] pr-4 py-4 bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-[1.25rem] text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-medium"
-                                placeholder="https://youtu.be/..."
-                            />
-                        </div>
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-full text-sm shadow-sm">
+                        <Activity className="w-4 h-4 text-emerald-500" />
+                        <span className="text-zinc-700 font-medium">{links.length} enlaces</span>
                     </div>
-
-                    <div className="group">
-                        <label className="block text-[11px] font-bold tracking-[0.15em] text-zinc-500 mb-3 transition-colors group-focus-within:text-[#EB3333]">
-                            ALIAS PERSONALIZADO <span className="text-zinc-400 dark:text-zinc-600 font-medium opacity-70 ml-1 tracking-normal">(Opcional)</span>
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <LinkIcon className="h-4 w-4 text-zinc-400 dark:text-zinc-500 group-focus-within:text-[#EB3333] transition-colors" />
-                            </div>
-                            <input
-                                type="text"
-                                value={alias}
-                                onChange={(e) => setAlias(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))}
-                                className="block w-full pl-[3.25rem] pr-4 py-4 bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-[1.25rem] text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-mono tracking-wide"
-                                placeholder="mi-super-video"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="pt-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowAdvanced(!showAdvanced)}
-                            className="text-[13px] font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors flex items-center gap-1.5"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cn("transition-transform duration-300", showAdvanced ? "rotate-90" : "")}><path d="m9 18 6-6-6-6" /></svg>
-                            Metadatos Personalizados {showAdvanced ? "(Ocultar)" : "(Opcional)"}
-                        </button>
-
-                        <AnimatePresence>
-                            {showAdvanced && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                    animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
-                                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                    className="overflow-hidden space-y-4"
-                                >
-                                    <div className="p-4 bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-2xl space-y-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Título Público</label>
-                                            <input
-                                                type="text"
-                                                value={customTitle}
-                                                onChange={(e) => setCustomTitle(e.target.value)}
-                                                className="block w-full px-3 py-2.5 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
-                                                placeholder="Ej: Nuevo Video Oficial..."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Descripción</label>
-                                            <input
-                                                type="text"
-                                                value={customDescription}
-                                                onChange={(e) => setCustomDescription(e.target.value)}
-                                                className="block w-full px-3 py-2.5 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
-                                                placeholder="Breve sumario persuasivo"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Thumbnail (URL opcional)</label>
-                                            <input
-                                                type="url"
-                                                value={customImage}
-                                                onChange={(e) => setCustomImage(e.target.value)}
-                                                className="block w-full px-3 py-2.5 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
-                                                placeholder="https://tu-sitio.com/imagen.jpg"
-                                            />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    <AnimatePresence>
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0, y: -10 }}
-                                animate={{ opacity: 1, height: 'auto', y: 0 }}
-                                exit={{ opacity: 0, height: 0, y: -10 }}
-                                className="overflow-hidden"
-                            >
-                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                                    <p className="text-sm text-red-600 dark:text-red-400 font-medium">{error}</p>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
 
                     <button
-                        type="submit"
-                        disabled={loading}
-                        className="group relative w-full flex items-center justify-center py-[1.125rem] px-8 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[15px] font-bold tracking-wide rounded-[1.25rem] transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden active:scale-[0.98] mt-4"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[14px] font-bold tracking-wide rounded-full transition-all active:scale-95 shadow-md shadow-[#EB3333]/20"
                     >
-                        {/* Brillo sobre el botón */}
-                        <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
-
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Generar"}
+                        <Plus className="w-4 h-4" />
+                        Crear Link
                     </button>
-                </form>
-            </motion.div>
+                </div>
+            </div>
 
-            {/* Columna Derecha: Lista de Links (Anti-Grid / Fluid Cards) */}
+            {/* Bulk Actions Contextual Bar */}
+            <AnimatePresence>
+                {selectedLinks.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-between bg-zinc-900 text-white rounded-2xl px-6 py-4 mb-6 shadow-xl"
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="flex items-center justify-center w-6 h-6 bg-white/20 rounded-full text-xs font-bold">{selectedLinks.length}</span>
+                            <span className="text-sm font-medium">seleccionados</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    const text = links.filter(l => selectedLinks.includes(l.id)).map(l => `${currentDomain}/${l.alias}`).join('\n');
+                                    copyToClipboard(text, 'bulk');
+                                }}
+                                className="text-sm font-medium hover:text-white/80 transition-colors"
+                            >
+                                Copiar todos
+                            </button>
+                            <div className="w-px h-4 bg-white/20"></div>
+                            <button
+                                onClick={async () => {
+                                    const previousLinks = [...links];
+                                    setLinks(links.filter(l => !selectedLinks.includes(l.id)));
+                                    toast.success(`${selectedLinks.length} enlaces eliminados`);
+                                    try {
+                                        for (const id of selectedLinks) {
+                                            await fetch(`/api/links?id=${id}`, { method: 'DELETE' });
+                                        }
+                                    } catch (err) {
+                                        setLinks(previousLinks);
+                                        toast.error("Error al eliminar los enlaces.");
+                                    } finally {
+                                        setSelectedLinks([]);
+                                    }
+                                }}
+                                className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Eliminar
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal de Creación */}
+            <AnimatePresence>
+                {isCreateModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                            onClick={() => setIsCreateModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-[460px] bg-white border border-zinc-200 shadow-2xl rounded-[2rem] p-8 sm:p-10 z-10"
+                        >
+                            <button
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+
+                            <div className="mb-8 pr-8">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EB3333]/10 border border-[#EB3333]/20 mb-4">
+                                    <Plus className="w-3 h-3 text-[#EB3333]" />
+                                    <span className="text-[10px] font-bold text-[#EB3333] uppercase tracking-widest">Nuevo Saca Link</span>
+                                </div>
+                                <h2 className="text-2xl font-display font-semibold transition-colors text-zinc-900 tracking-tight">Potenciar URL</h2>
+                            </div>
+
+                            <form onSubmit={(e) => {
+                                createLink(e).then(() => {
+                                    if (!error) setIsCreateModalOpen(false);
+                                });
+                            }} className="space-y-6">
+                                <div className="group">
+                                    <label className="block text-[10px] font-bold tracking-[0.14em] text-zinc-500 mb-2 transition-colors group-focus-within:text-[#EB3333] uppercase">
+                                        Original YouTube URL
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <Youtube className="h-5 w-5 text-zinc-400 group-focus-within:text-[#EB3333] transition-colors" />
+                                        </div>
+                                        <input
+                                            type="url"
+                                            required
+                                            value={url}
+                                            onChange={(e) => setUrl(e.target.value)}
+                                            className="block w-full pl-[3.25rem] pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-[1rem] text-[14px] text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-medium"
+                                            placeholder="https://youtu.be/..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="group">
+                                    <label className="block text-[10px] font-bold tracking-[0.15em] text-zinc-500 mb-2 transition-colors group-focus-within:text-[#EB3333]">
+                                        ALIAS <span className="text-zinc-400 font-medium opacity-70 ml-1 tracking-normal">(Opcional)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <LinkIcon className="h-4 w-4 text-zinc-400 group-focus-within:text-[#EB3333] transition-colors" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={alias}
+                                            onChange={(e) => setAlias(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))}
+                                            className="block w-full pl-[3.25rem] pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-[1rem] text-[14px] text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-mono tracking-wide"
+                                            placeholder="mi-super-video"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAdvanced(!showAdvanced)}
+                                        className="text-[13px] font-semibold text-zinc-500 hover:text-zinc-900 transition-colors flex items-center gap-1.5"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cn("transition-transform duration-300", showAdvanced ? "rotate-90" : "")}><path d="m9 18 6-6-6-6" /></svg>
+                                        Metadatos Personalizados {showAdvanced ? "(Ocultar)" : "(Opcional)"}
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {showAdvanced && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                className="overflow-hidden space-y-4"
+                                            >
+                                                <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl space-y-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Título Público</label>
+                                                        <input
+                                                            type="text"
+                                                            value={customTitle}
+                                                            onChange={(e) => setCustomTitle(e.target.value)}
+                                                            className="block w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
+                                                            placeholder="Ej: Nuevo Video Oficial..."
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Descripción</label>
+                                                        <input
+                                                            type="text"
+                                                            value={customDescription}
+                                                            onChange={(e) => setCustomDescription(e.target.value)}
+                                                            className="block w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
+                                                            placeholder="Breve sumario persuasivo"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Thumbnail (URL opcional)</label>
+                                                        <input
+                                                            type="url"
+                                                            value={customImage}
+                                                            onChange={(e) => setCustomImage(e.target.value)}
+                                                            className="block w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
+                                                            placeholder="https://tu-sitio.com/imagen.jpg"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="group relative w-full flex items-center justify-center py-[1.125rem] px-8 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[15px] font-bold tracking-wide rounded-[1.25rem] transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden active:scale-[0.98] mt-4"
+                                >
+                                    {/* Brillo sobre el botón */}
+                                    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+
+                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Generar y Acortar"}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Main Links Container */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full xl:flex-1"
+                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full space-y-4"
             >
-                <div className="flex items-center justify-between mb-8 pl-2">
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-2xl font-display font-semibold transition-colors text-zinc-900 dark:text-white tracking-tight flex items-center gap-3">
-                            Tus enlaces
-                        </h2>
-                        <div className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-full text-sm">
-                            <Activity className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                            <span className="text-zinc-700 dark:text-zinc-200 font-medium">{links.length} totales</span>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={toggleTheme}
-                        className="hidden xl:flex items-center justify-center w-11 h-11 rounded-full border border-zinc-200 dark:border-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/10 transition-colors shadow-sm"
-                        title="Cambiar Tema (Light/Dark)"
-                    >
-                        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                    </button>
-                </div>
 
                 {links.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                        className="p-16 glass-panel rounded-3xl flex flex-col items-center justify-center text-center border-dashed border-zinc-300 dark:border-white/20"
+                        className="p-16 bg-white border border-zinc-200 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm"
                     >
-                        <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-3xl flex items-center justify-center mb-6 text-zinc-400 dark:text-zinc-500 backdrop-blur-md border border-black/5 dark:border-white/5">
+                        <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center mb-6 text-zinc-400 border border-zinc-100">
                             <LinkIcon className="w-8 h-8" />
                         </div>
-                        <h3 className="text-xl font-display font-semibold text-zinc-900 dark:text-white mb-2 tracking-tight">Lienzo vacío</h3>
-                        <p className="text-zinc-500 dark:text-zinc-400 font-medium max-w-sm mx-auto leading-relaxed">Tu historial de Saca Links aparecerá aquí una vez que generes tu primer enlace.</p>
+                        <h3 className="text-xl font-display font-semibold text-zinc-900 mb-2 tracking-tight">Lienzo vacío</h3>
+                        <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed mb-6">Tu historial de Saca Links aparecerá aquí una vez que generes tu primer enlace.</p>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-900 hover:bg-black text-white text-[14px] font-bold tracking-wide rounded-full transition-all active:scale-95 shadow-md"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Crear mi primer Link
+                        </button>
                     </motion.div>
                 ) : (
-                    <div className="grid gap-5">
+                    <div className="grid grid-cols-1 gap-4">
+                        {/* Selected All Header */}
+                        {links.length > 0 && (
+                            <div className="flex items-center px-6 py-3 bg-white/50 border border-zinc-200 rounded-2xl mb-2 shadow-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedLinks.length === links.length}
+                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                    className="w-4 h-4 rounded border-zinc-300 text-[#EB3333] focus:ring-[#EB3333] cursor-pointer"
+                                />
+                                <span className="ml-4 text-sm font-semibold text-zinc-500">Seleccionar todos los {links.length} enlaces</span>
+                            </div>
+                        )}
+
                         <AnimatePresence mode="popLayout">
                             {links.map((link) => {
                                 const shortUrl = `${currentDomain}/${link.alias}`;
@@ -354,27 +446,42 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                         key={link.id}
-                                        className="group flex flex-col p-6 md:p-8 bg-white dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/5 rounded-[2rem] transition-all duration-300 hover:shadow-xl hover:border-zinc-300 dark:hover:border-white/10"
+                                        className={cn(
+                                            "group flex flex-col p-5 md:p-6 bg-white border rounded-2xl transition-all shadow-sm hover:shadow-md",
+                                            selectedLinks.includes(link.id) ? "border-[#EB3333] ring-1 ring-[#EB3333]/20 bg-red-50/20" : "border-zinc-200 hover:border-zinc-300"
+                                        )}
                                     >
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                                            <div className="flex-1 min-w-0 pr-6">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <a
-                                                        href={shortUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="text-[#EB3333] hover:text-[#D12B2B] font-mono text-lg truncate font-medium flex items-center gap-2 transition-colors relative"
-                                                    >
-                                                        <span className="text-[#EB3333]/50">/</span>{link.alias}
-                                                        <ExternalLink className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
-                                                    </a>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full h-full gap-6">
+                                            <div className="flex items-start gap-4 flex-1 overflow-hidden">
+                                                {/* Checkbox Individual */}
+                                                <div className="pt-1.5 flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLinks.includes(link.id)}
+                                                        onChange={(e) => handleSelectLink(link.id, e.target.checked)}
+                                                        className="w-4 h-4 rounded border-zinc-300 text-[#EB3333] focus:ring-[#EB3333] cursor-pointer"
+                                                    />
                                                 </div>
-                                                <p className="text-zinc-500 dark:text-zinc-400 text-sm truncate font-medium flex items-center gap-2 bg-black/5 dark:bg-black/20 w-max max-w-full px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5">
-                                                    <Youtube className="w-4 h-4 text-[#EB3333]/90" /> {link.original_url}
-                                                </p>
+
+                                                <div className="flex flex-col gap-2 min-w-0 pr-6">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <a
+                                                            href={shortUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-[#EB3333] hover:text-[#D12B2B] font-mono text-lg truncate font-medium flex items-center gap-2 transition-colors relative"
+                                                        >
+                                                            <span className="text-[#EB3333]/50">/</span>{link.alias}
+                                                            <ExternalLink className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                                                        </a>
+                                                    </div>
+                                                    <p className="text-zinc-500 text-sm truncate font-medium flex items-center gap-2 bg-black/5 w-max max-w-full px-3 py-1.5 rounded-lg border border-black/5">
+                                                        <Youtube className="w-4 h-4 text-[#EB3333]/90" /> {link.original_url}
+                                                    </p>
+                                                </div>
                                             </div>
 
-                                            <div className="flex items-center gap-4 mt-6 sm:mt-0 pt-6 sm:pt-0 border-t border-zinc-200 sm:border-t-0 dark:border-white/10 sm:pl-6 justify-between sm:justify-end">
+                                            <div className="flex items-center gap-4 mt-6 sm:mt-0 pt-6 sm:pt-0 border-t border-zinc-200 sm:border-t-0 sm:pl-6 justify-between sm:justify-end">
 
                                                 {/* Metric Pill as a Button */}
                                                 <button
@@ -528,11 +635,11 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                                         />
                                                                         <Tooltip
                                                                             contentStyle={{
-                                                                                backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff',
-                                                                                borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                                                                backgroundColor: '#ffffff',
+                                                                                borderColor: 'rgba(0,0,0,0.1)',
                                                                                 borderRadius: '12px',
                                                                                 boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                                                                color: theme === 'dark' ? '#fff' : '#000'
+                                                                                color: '#000'
                                                                             }}
                                                                             itemStyle={{ color: '#EB3333', fontWeight: 'bold' }}
                                                                             labelStyle={{ color: '#71717a', marginBottom: '4px' }}

@@ -187,10 +187,10 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-8 border-b border-zinc-200/60 gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-semibold text-zinc-900 tracking-tight flex items-center gap-3">
-                        Dashboard
+                        Revenue Engine
                     </h2>
                     <p className="text-[15px] text-zinc-500 mt-2 leading-relaxed">
-                        Gestiona tus Smart Links, monitorea tráfico y configura metadatos.
+                        Convierte tu contenido en un sistema de crecimiento. Gestiona enlaces, enriquece leads y monitorea el ROI.
                     </p>
                 </div>
 
@@ -470,8 +470,8 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                         <div className="w-20 h-20 bg-zinc-50 rounded-3xl flex items-center justify-center mb-6 text-zinc-400 border border-zinc-100">
                             <LinkIcon className="w-8 h-8" />
                         </div>
-                        <h3 className="text-xl font-display font-semibold text-zinc-900 mb-2 tracking-tight">Lienzo vacío</h3>
-                        <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed mb-6">Tu historial de Saca Links aparecerá aquí una vez que generes tu primer enlace.</p>
+                        <h3 className="text-xl font-display font-semibold text-zinc-900 mb-2 tracking-tight">El Motor está Listo</h3>
+                        <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed mb-6">Genera tu primer Smart Link para iniciar la captura de tráfico y acelerar tu Speed-to-Lead.</p>
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-zinc-900 hover:bg-black text-white text-[14px] font-bold tracking-wide rounded-full transition-all active:scale-95 shadow-md"

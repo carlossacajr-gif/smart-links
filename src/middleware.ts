@@ -2,7 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import type { MiddlewareHandler } from "astro";
 import { supabase } from "./lib/supabase";
 
-const protectedRoutes = ["/dashboard", "/api/links"];
+const protectedRoutes = ["/dashboard", "/api/links", "/api/analytics"];
 const publicRoutes = ["/login", "/", "/favicon.ico", "/favicon.svg"];
 
 export const onRequest: MiddlewareHandler = defineMiddleware(

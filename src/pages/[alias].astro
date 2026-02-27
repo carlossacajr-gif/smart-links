@@ -1,0 +1,208 @@
+---
+import { supabase } from '../lib/supabase';
+
+const { alias } = Astro.params;
+
+// 1. Buscar en BD
+const { data: link, error } = await supabase
+  .from('links')
+  .select('*')
+  .eq('alias', alias)
+  .single();
+
+// 2. Si no existe, return 404
+if (error || !link) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not found'
+  });
+}
+
+// 3. Extraer Video ID de la URL
+// Maneja ambos formatos: youtu.be/ID o youtube.com/watch?v=ID
+let videoId = '';
+try {
+  const urlObj = new URL(link.original_url);
+  if (urlObj.hostname.includes('youtu.be')) {
+    videoId = urlObj.pathname.slice(1);
+  } else {
+    videoId = urlObj.searchParams.get('v') || '';
+  }
+} catch (e) {
+  console.error("Invalid URL format in DB", link.original_url);
+}
+
+// 4. Obtener Metadatos de YouTube (oEmbed) para SSR Social Cards
+let title = "Video de YouTube";
+let thumbnailUrl = "";
+
+if (videoId) {
+  try {
+    const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (oembedRes.ok) {
+      const oembedData = await oembedRes.json();
+      title = oembedData.title;
+      thumbnailUrl = oembedData.thumbnail_url;
+    }
+  } catch (e) {
+    console.error("Failed to fetch oEmbed metadata", e);
+  }
+}
+
+// Si la API falla, usamos un fallback a la miniatura maxres
+if (!thumbnailUrl && videoId) {
+  thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+}
+
+// Props para enviar al cliente (para el script de Redir)
+const clientProps = {
+  id: link.id,
+  originalUrl: link.original_url,
+  videoId
+};
+---
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- SEO & Social Meta Tags (La razón de ser del SSR) -->
+  <title>{title}</title>
+  <meta name="description" content="Abre este video directamente en la App de YouTube." />
+  
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="video.other" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content="Toca aquí para ver este video en alta calidad desde la App de YouTube" />
+  <meta property="og:image" content={thumbnailUrl} />
+  <meta property="og:url" content={Astro.url.href} />
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content="Ver directo en la App" />
+  <meta name="twitter:image" content={thumbnailUrl} />
+
+  <style>
+    body {
+      background-color: #0A0A0B;
+      color: #FAFAFA;
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .blur-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url('{{thumbnailUrl}}'); /* Inyectado dinámicamente abajo */
+      background-size: cover;
+      background-position: center;
+      filter: blur(40px) brightness(0.3);
+      z-index: -1;
+      transform: scale(1.1);
+    }
+    .loader-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      z-index: 10;
+      text-align: center;
+      padding: 0 1rem;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: #6366F1;
+      animation: spin 1s ease-in-out infinite;
+    }
+    .message {
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      opacity: 0.9;
+    }
+    .fallback-btn {
+      display: none; /* Se muestra via JS si pasa mucho tiempo */
+      margin-top: 2rem;
+      padding: 1rem 2rem;
+      background-color: #FFFFFF;
+      color: #000000;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: 0 10px 25px rgba(255,255,255,0.1);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="blur-bg" style={`background-image: url('${thumbnailUrl}')`}></div>
+  
+  <div class="loader-container">
+    <div class="spinner"></div>
+    <div class="message">Abriendo YouTube...</div>
+    <a href={link.original_url} class="fallback-btn" id="fallback-btn">Continuar al video</a>
+  </div>
+
+  <script define:vars={{ props: clientProps }}>
+    // Fase 4: Analíticas Asíncronas y Deep Linking de Cliente
+    const { id, originalUrl, videoId } = props;
+
+    // 1. Enviar click asíncrono a API propia
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        linkId: id,
+        userAgent: navigator.userAgent,
+        os: getOS(),
+        referer: document.referrer
+      })
+    }).catch(e => console.error("Analytics failure", e)); // No bloqueante
+
+    // 2. Determinar OS
+    function getOS() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'iOS';
+      if (/android/i.test(ua)) return 'Android';
+      return 'Desktop';
+    }
+
+    const os = getOS();
+
+    // 3. Estrategia de Redirección (Escape Hatch)
+    setTimeout(() => {
+      if (os === 'iOS') {
+        window.location.href = `youtube://${videoId}`;
+      } else if (os === 'Android') {
+        window.location.href = `intent://${videoId}#Intent;package=com.google.android.youtube;scheme=vnd.youtube;end;`;
+      } else {
+        window.location.href = originalUrl;
+      }
+
+      // Si después de 2.5s seguimos aquí, y no se abrió la app nativa (ej. app no instalada o bloqueo rudo),
+      // mostramos el botón grande de fallback e intentamos la web nativa móvil como medida desesperada.
+      setTimeout(() => {
+        document.getElementById('fallback-btn').style.display = 'inline-block';
+        window.location.href = originalUrl;
+      }, 2500);
+
+    }, 100); // 100ms de delay para asegurar que el tracking asíncrono arrancó
+  </script>
+</body>
+</html>

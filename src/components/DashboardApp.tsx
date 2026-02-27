@@ -489,14 +489,14 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     className={cn(
                                                         "flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 border",
                                                         activeChartId === link.id
-                                                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                                            : "bg-white/50 dark:bg-black/40 border-zinc-200 dark:border-white/5 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 shadow-inner"
+                                                            ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30"
+                                                            : "bg-white/50 border-zinc-200 hover:border-emerald-500/30 shadow-inner"
                                                     )}
                                                     aria-label="Ver analítica"
                                                     title="Ver analítica de clics"
                                                 >
-                                                    <Activity className={cn("w-4 h-4", activeChartId === link.id ? "text-emerald-500 dark:text-emerald-400" : "text-emerald-500 dark:text-emerald-400/80")} />
-                                                    <span className={cn("text-sm font-semibold", activeChartId === link.id ? "text-emerald-700 dark:text-emerald-300" : "text-zinc-900 dark:text-zinc-200")}>
+                                                    <Activity className={cn("w-4 h-4", activeChartId === link.id ? "text-emerald-500" : "text-emerald-500")} />
+                                                    <span className={cn("text-sm font-semibold", activeChartId === link.id ? "text-emerald-700" : "text-zinc-900")}>
                                                         {clickCount} <span className="font-normal ml-1 opacity-70">clicks</span>
                                                     </span>
                                                     <BarChart3 className="w-3.5 h-3.5 ml-1 opacity-50 hidden sm:block" />
@@ -508,8 +508,8 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         className={cn(
                                                             "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 active:scale-95 border",
                                                             isCopied
-                                                                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                                                : "bg-black/5 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10"
+                                                                ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30"
+                                                                : "bg-black/5 text-zinc-600 hover:bg-black/10 hover:text-zinc-900 border-black/5 hover:border-black/10"
                                                         )}
                                                         title="Copiar link"
                                                     >
@@ -535,7 +535,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                             "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 active:scale-95 border",
                                                             activeQrId === link.id
                                                                 ? "bg-[#EB3333]/20 text-[#EB3333] border-[#EB3333]/30"
-                                                                : "bg-black/5 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:bg-black/10 dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10"
+                                                                : "bg-black/5 text-zinc-600 hover:bg-black/10 hover:text-zinc-900 border-black/5 hover:border-black/10"
                                                         )}
                                                         title="Código QR"
                                                     >
@@ -544,7 +544,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
 
                                                     <button
                                                         onClick={() => deleteLink(link.id)}
-                                                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 hover:text-[#EB3333] dark:hover:text-red-400 border border-black/5 dark:border-white/5 hover:border-red-500/20 dark:hover:border-red-500/30 transition-all duration-300 active:scale-95"
+                                                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-black/5 text-zinc-600 hover:bg-red-500/10 hover:text-[#EB3333] border border-black/5 hover:border-red-500/20 transition-all duration-300 active:scale-95"
                                                         title="Eliminar link"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -561,7 +561,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     exit={{ opacity: 0, height: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="pt-8 mt-6 border-t border-zinc-200 dark:border-white/10 flex flex-col items-center gap-6">
+                                                    <div className="pt-8 mt-6 border-t border-zinc-200 flex flex-col items-center gap-6">
                                                         <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex-shrink-0">
                                                             <QRCode
                                                                 id={`qr-${link.id}`}
@@ -574,12 +574,12 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         </div>
                                                         <div className="flex-1 text-center space-y-4 w-full">
                                                             <div>
-                                                                <h4 className="text-[15px] font-bold text-zinc-900 dark:text-white">Código Escaneable</h4>
-                                                                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-4 leading-relaxed max-w-sm mx-auto">Coloca este QR en tus empaques, pantallas o videos. Al escanearlo, activará la redirección instantánea Saca.</p>
+                                                                <h4 className="text-[15px] font-bold text-zinc-900">Código Escaneable</h4>
+                                                                <p className="text-sm text-zinc-500 mt-1 mb-4 leading-relaxed max-w-sm mx-auto">Coloca este QR en tus empaques, pantallas o videos. Al escanearlo, activará la redirección instantánea Saca.</p>
                                                             </div>
                                                             <button
                                                                 onClick={() => downloadQR(link.id, link.alias)}
-                                                                className="inline-flex items-center justify-center gap-2 py-2.5 px-6 w-full sm:w-auto bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-semibold rounded-xl text-[15px] transition-colors active:scale-95 mx-auto"
+                                                                className="inline-flex items-center justify-center gap-2 py-2.5 px-6 w-full sm:w-auto bg-black hover:bg-zinc-800 text-white font-semibold rounded-xl text-[15px] transition-colors active:scale-95 mx-auto"
                                                             >
                                                                 <Download className="w-4 h-4" />
                                                                 Descargar
@@ -598,16 +598,16 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     exit={{ opacity: 0, height: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="pt-8 mt-6 border-t border-zinc-200 dark:border-white/10">
+                                                    <div className="pt-8 mt-6 border-t border-zinc-200">
                                                         <div className="flex items-center justify-between mb-6 px-2">
                                                             <div>
-                                                                <h4 className="text-[15px] font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                                                                <h4 className="text-[15px] font-bold text-zinc-900 flex items-center gap-2">
                                                                     <BarChart3 className="w-4 h-4 text-[#EB3333]" /> Rendimiento (7 días)
                                                                 </h4>
-                                                                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Evolución de clics diarios</p>
+                                                                <p className="text-sm text-zinc-500 mt-1">Evolución de clics diarios</p>
                                                             </div>
                                                             <div className="text-right">
-                                                                <div className="text-2xl font-display font-semibold text-zinc-900 dark:text-white">{clickCount}</div>
+                                                                <div className="text-2xl font-display font-semibold text-zinc-900">{clickCount}</div>
                                                                 <div className="text-[11px] font-bold tracking-wider text-emerald-500 uppercase">Total</div>
                                                             </div>
                                                         </div>
@@ -615,7 +615,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         <div className="h-[200px] w-full -ml-4">
                                                             {chartLoading ? (
                                                                 <div className="w-full h-full flex items-center justify-center">
-                                                                    <Loader2 className="w-6 h-6 animate-spin text-zinc-300 dark:text-zinc-600" />
+                                                                    <Loader2 className="w-6 h-6 animate-spin text-zinc-300" />
                                                                 </div>
                                                             ) : chartData.length > 0 ? (
                                                                 <ResponsiveContainer width="100%" height="100%">

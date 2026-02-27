@@ -26,11 +26,11 @@ const { title } = Astro.props;
 <body class="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] antialiased overflow-x-hidden relative transition-colors duration-700">
   
   <!-- Fondo Premium Inmaculado (Stripe/Vercel Style) -->
-  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-zinc-50 dark:bg-[#050505]">
+  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-zinc-50">
     <div class="absolute inset-0 bg-[url('/noise.webp')] opacity-[0.03] mix-blend-overlay"></div>
     
     <!-- Unico y sutil resplandor cenital -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white/40 dark:bg-white/[0.02] blur-[100px] rounded-full pointer-events-none"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white/40 blur-[100px] rounded-full pointer-events-none"></div>
   </div>
   
   <slot />
@@ -59,14 +59,7 @@ const { title } = Astro.props;
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
   }
 
-  .dark {
-    /* Configuración de Dark Mode (Fondo Premium y Alto Contraste) */
-    --bg-main: #050505;
-    --text-main: #FAFAFA;
-    --glass-bg: rgba(10, 10, 10, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.05);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-  }
+
 
   /* Utilidad Universal actualizable para el Glassmorphism UI */
   .glass-panel {

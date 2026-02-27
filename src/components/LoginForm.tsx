@@ -90,27 +90,29 @@ export default function LoginForm() {
                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                 className="glass-panel p-10 md:p-12 rounded-[2.5rem] relative z-10 overflow-hidden group"
             >
-                {/* Spot de luz interactivo de fondo que sigue un poco el hover general */}
-                <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-indigo-500/20 blur-[100px] rounded-full pointer-events-none transition-all duration-1000 group-hover:bg-indigo-500/30 group-hover:scale-110"></div>
+                <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-[#EB3333]/15 dark:bg-[#EB3333]/20 blur-[100px] rounded-full pointer-events-none transition-all duration-1000 group-hover:bg-[#EB3333]/20 dark:group-hover:bg-[#EB3333]/30 group-hover:scale-110 mix-blend-multiply dark:mix-blend-screen"></div>
 
                 <div className="relative z-10">
                     <motion.div
                         initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3, duration: 0.8 }}
-                        className="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col justify-center items-center backdrop-blur-md mb-8 relative overflow-hidden"
+                        className="w-16 h-16 rounded-3xl bg-white/50 dark:bg-[#EB3333]/10 border border-black/5 dark:border-[#EB3333]/20 flex justify-center items-center backdrop-blur-md mb-8 relative overflow-hidden shadow-sm"
                     >
-                        <div className="absolute inset-[-2px] rounded-[34px] border border-white/10 animate-[spin_3s_linear_infinite]"></div>
-                        <div className="w-4 h-4 rounded-full bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,1)]"></div>
+                        <div className="absolute inset-[-2px] rounded-[34px] border border-[#EB3333]/20 dark:border-white/10 animate-[spin_3s_linear_infinite]"></div>
+
+                        {/* Logo Inteligente (Claro en Oscuro, Rojo en Claro) */}
+                        <img src="/logos/Logo rojo (solo icono).svg" alt="Saca Logo" className="w-8 h-8 relative z-10 dark:hidden block opacity-90 transition-transform duration-500 scale-105" />
+                        <img src="/logos/Logo blanco (solo icono).svg" alt="Saca Logo" className="w-8 h-8 relative z-10 hidden dark:block transition-transform duration-500 scale-105" />
                     </motion.div>
 
                     <motion.h1
                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }}
-                        className="text-4xl font-display font-semibold text-white tracking-tight leading-tight mb-2"
+                        className="text-4xl font-display font-semibold text-zinc-900 dark:text-white tracking-tight leading-tight mb-2 transition-colors"
                     >
                         Entrar a la <br />Plataforma.
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.8 }}
-                        className="text-zinc-400 text-sm font-medium mb-10"
+                        className="text-zinc-500 dark:text-zinc-400 text-sm font-medium mb-10 transition-colors"
                     >
                         Si tu cuenta no existe, la crearemos al vuelo.
                     </motion.p>
@@ -123,7 +125,7 @@ export default function LoginForm() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-[#0a0a0c]/60 border border-white/5 py-4 px-5 rounded-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all font-medium backdrop-blur-sm"
+                                className="w-full bg-white/50 dark:bg-[#0a0a0c]/60 border border-zinc-200 dark:border-white/5 py-4 px-5 rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-4 focus:ring-[#EB3333]/20 focus:border-[#EB3333]/50 transition-all font-medium backdrop-blur-sm"
                                 placeholder="usuario@saca.network"
                             />
                         </motion.div>
@@ -135,7 +137,7 @@ export default function LoginForm() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-[#0a0a0c]/60 border border-white/5 py-4 px-5 rounded-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all font-medium backdrop-blur-sm"
+                                className="w-full bg-white/50 dark:bg-[#0a0a0c]/60 border border-zinc-200 dark:border-white/5 py-4 px-5 rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-4 focus:ring-[#EB3333]/20 focus:border-[#EB3333]/50 transition-all font-medium backdrop-blur-sm"
                                 placeholder="••••••••"
                             />
                         </motion.div>

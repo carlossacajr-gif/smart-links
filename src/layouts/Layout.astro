@@ -21,86 +21,73 @@ const { title } = Astro.props;
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet">
 		
-    <title>{title} | Smart Links</title>
-	</head>
-	<body class="min-h-screen bg-[#050505] text-[#FAFAFA] antialiased selection:bg-indigo-500/30 overflow-x-hidden relative">
+  <title>{title} | Smart Links</title>
+
+  <!-- Script inteligente de Theming (anti-flash blanco) -->
+  <script is:inline>
+    const getTheme = () => {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+        return localStorage.getItem('theme');
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
     
-    <!-- 2026 Trend: Grainy Blur Orbs (Cristalismo Orgánico) -->
-    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-      <div class="absolute inset-0 bg-[url('/noise.webp')] opacity-[0.03] mix-blend-overlay"></div>
-      
-      <!-- Orbe Superior Derecho (Indigo/Purple) -->
-      <div class="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-indigo-900/20 blur-[120px] mix-blend-screen animate-blob"></div>
-      
-      <!-- Orbe Inferior Izquierdo (Fuchsia/Violet) -->
-      <div class="absolute -bottom-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-900/10 blur-[120px] mix-blend-screen animate-blob animation-delay-2000"></div>
-      
-      <!-- Orbe Central (Azul sutil) -->
-      <div class="absolute top-[20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-blue-900/10 blur-[100px] mix-blend-screen animate-blob animation-delay-4000"></div>
-    </div>
+    if (getTheme() === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] antialiased overflow-x-hidden relative transition-colors duration-700">
+  
+  <!-- CSS Orbs Animados (Cristalismo Orgánico adaptable a Claro/Oscuro) -->
+  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+    <div class="absolute inset-0 bg-[url('/noise.webp')] opacity-[0.04] dark:opacity-[0.03] mix-blend-overlay"></div>
     
-		<slot />
-	</body>
+    <!-- Saca Red Orb (Cambiando el Índigo genérico) -->
+    <div class="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#EB3333]/15 dark:bg-[#EB3333]/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob"></div>
+    
+    <!-- Secondary Orb (Acentuador Cálido) -->
+    <div class="absolute -bottom-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#ff7b00]/10 dark:bg-[#ff7b00]/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000"></div>
+    
+    <!-- Tercer Orbe Neutral -->
+    <div class="absolute top-[20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-zinc-400/20 dark:bg-zinc-800/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-4000"></div>
+  </div>
+  
+  <slot />
+</body>
 </html>
 
 <style is:global>
   @import "tailwindcss";
 
-  @theme {
-    --color-background-elevated: rgba(18, 18, 20, 0.4);
-    --color-border-subtle: rgba(255, 255, 255, 0.05);
-    --color-border-glow: rgba(99, 102, 241, 0.3);
-  }
-  
-  html {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  }
-
-  h1, h2, h3, .font-display {
-    font-family: 'Clash Display', 'Plus Jakarta Sans', sans-serif;
+  :root {
+    --color-saca: #EB3333;
+    
+    /* Configuración por defecto (Light Mode) */
+    --bg-main: #FAFAFA;
+    --text-main: #09090b;
+    --glass-bg: rgba(255, 255, 255, 0.5);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
   }
 
-  /* Animaciones CSS Nativas para Orbes (Performance > JS) */
-  @keyframes blob {
-    0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0px, 0px) scale(1); }
+  .dark {
+    /* Configuración de Dark Mode (Fondo Premium y Alto Contraste) */
+    --bg-main: #050505;
+    --text-main: #FAFAFA;
+    --glass-bg: linear-gradient(145deg, rgba(23, 23, 23, 0.4), rgba(10, 10, 10, 0.6));
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
   }
 
-  .animate-blob {
-    animation: blob 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
-
-  /* Custom Scrollbar Glassmorphic */
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255, 0.1);
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255, 0.2);
-  }
-
-  /* Utilidad para el Glassmorphism UI */
+  /* Utilidad Universal actualizable para el Glassmorphism UI */
   .glass-panel {
-    background: linear-gradient(145deg, rgba(23, 23, 23, 0.4), rgba(10, 10, 10, 0.6));
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    transition: background 0.7s ease, border-color 0.7s ease, box-shadow 0.7s ease;
   }
-</style>

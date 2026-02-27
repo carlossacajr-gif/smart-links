@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Copy, Plus, Activity, Youtube, Trash2, ExternalLink, Loader2, Link as LinkIcon, BarChart3, Check, QrCode, Download, X, MousePointerClick, Clock, TrendingUp } from 'lucide-react';
+import { Link as LinkIcon, Activity, Maximize2, X, Plus, LogOut, Check, Copy, Settings, Search, RefreshCw, Smartphone, Monitor, Globe, ChevronRight, BarChart3, Clock, MousePointerClick, QrCode, Download, Trash2, ArrowUpRight, CopyCheck, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils/cn';
 import QRCode from "react-qr-code";
@@ -181,13 +181,14 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
 
         setActiveQrId(null);
         setLoadingChartId(linkId);
+        // Expandimos inmediatamente el bloque para que React Monte el Animated.div.
+        // Pero en la UI lo dejaremos vacío hasta que cargue.
+        setActiveChartId(linkId);
         try {
             const res = await fetch(`/api/analytics?link_id=${linkId}`);
             const data = await res.json();
             if (res.ok && data.data) {
                 setChartData(data.data);
-                // Expand the chart ONLY after data is ready, preventing the layout shift jump
-                setActiveChartId(linkId);
             } else {
                 setChartData(null);
             }
@@ -822,7 +823,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                                         </ResponsiveContainer>
                                                                     </div>
 
-                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 pb-2 pr-4">
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2 pb-2 pr-4">
                                                                         {/* Top Referers */}
                                                                         <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 shadow-sm">
                                                                             <h5 className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2"><MousePointerClick className="w-3.5 h-3.5" /> Top Orígenes</h5>
@@ -857,11 +858,25 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                                                 {chartData.devices.length === 0 && <p className="text-xs text-zinc-400">Sin datos de dispositivo</p>}
                                                                             </div>
                                                                         </div>
+
+                                                                        {/* Top Countries (Geography) */}
+                                                                        <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 shadow-sm sm:col-span-2 lg:col-span-1">
+                                                                            <h5 className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Globe className="w-3.5 h-3.5" /> Geografía</h5>
+                                                                            <div className="space-y-3">
+                                                                                {chartData.countries && chartData.countries.map((c: any) => (
+                                                                                    <div key={c.name} className="flex items-center justify-between">
+                                                                                        <span className="text-sm font-medium text-zinc-900">{c.name}</span>
+                                                                                        <span className="text-sm font-bold text-zinc-600 bg-white border border-zinc-200 px-2 py-0.5 rounded-md shadow-sm">{c.count}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                                {(!chartData.countries || chartData.countries.length === 0) && <p className="text-xs text-zinc-400">Sin datos de ubicación</p>}
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className="w-full h-[200px] flex items-center justify-center">
-                                                                    <p className="text-zinc-500 text-sm">Sin datos suficientes.</p>
+                                                                <div className="w-full py-8 text-center border border-dashed border-zinc-200 rounded-2xl">
+                                                                    <p className="text-sm text-zinc-500">Aún no hay clics en los últimos 7 días</p>
                                                                 </div>
                                                             )}
                                                         </div>

@@ -17,7 +17,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
         const { data: clicks, error } = await supabase
             .from('clicks')
-            .select('created_at, referer, os')
+            .select('created_at, referer, os, device_type, country, city')
             .eq('link_id', linkId)
             .gte('created_at', sevenDaysAgo.toISOString())
             .order('created_at', { ascending: true });
@@ -53,16 +53,18 @@ export const GET: APIRoute = async ({ request, url }) => {
         const refererCounts: Record<string, number> = {};
         // Group by OS
         const osCounts: Record<string, number> = {};
+        // Group by Country
+        const countryCounts: Record<string, number> = {};
 
         clicks?.forEach(click => {
             // Count Referers
             const ref = click.referer || 'Direct';
             // Simple clean up for common referers (e.g. android-app://com.google.android.youtube -> YouTube App)
             let cleanRef = ref;
-            if (ref.includes('youtube.com') || ref.includes('android-app://com.google.android.youtube')) cleanRef = 'YouTube';
+            if (ref.includes('youtube.com') || ref.includes('android-app://com.google.android.youtube') || ref.includes('youtu.be')) cleanRef = 'YouTube';
             else if (ref.includes('t.co') || ref.includes('twitter.com')) cleanRef = 'X / Twitter';
             else if (ref.includes('instagram.com')) cleanRef = 'Instagram';
-            else if (ref.includes('facebook.com') || ref.includes('fb.com')) cleanRef = 'Facebook';
+            else if (ref.includes('facebook.com') || ref.includes('fb.com') || ref.includes('fb://')) cleanRef = 'Facebook';
             else if (ref.includes('tiktok.com')) cleanRef = 'TikTok';
             else if (ref.includes('linkedin.com')) cleanRef = 'LinkedIn';
             else if (ref === 'Direct') cleanRef = 'Directo';
@@ -75,16 +77,15 @@ export const GET: APIRoute = async ({ request, url }) => {
 
             refererCounts[cleanRef] = (refererCounts[cleanRef] || 0) + 1;
 
-            // Count OS
-            const os = click.os || 'Desconocido';
-            let cleanOs = 'Otro';
-            if (os.toLowerCase().includes('windows')) cleanOs = 'Windows';
-            else if (os.toLowerCase().includes('mac')) cleanOs = 'macOS';
-            else if (os.toLowerCase().includes('ios') || os.match(/iphone|ipad/i)) cleanOs = 'iOS';
-            else if (os.toLowerCase().includes('android')) cleanOs = 'Android';
-            else if (os.toLowerCase().includes('linux')) cleanOs = 'Linux';
+            // Count OS & Device Type
+            const os = click.os || 'Otro';
+            const deviceType = click.device_type ? ` (${click.device_type})` : '';
+            const osKey = `${os}${deviceType}`;
+            osCounts[osKey] = (osCounts[osKey] || 0) + 1;
 
-            osCounts[cleanOs] = (osCounts[cleanOs] || 0) + 1;
+            // Count Country
+            const country = click.country || 'Desconocido';
+            countryCounts[country] = (countryCounts[country] || 0) + 1;
         });
 
         const topReferers = Object.entries(refererCounts)
@@ -94,13 +95,20 @@ export const GET: APIRoute = async ({ request, url }) => {
 
         const topDevices = Object.entries(osCounts)
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        const topCountries = Object.entries(countryCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
 
         return new Response(JSON.stringify({
             data: {
                 timeline: chartData,
                 referers: topReferers,
-                devices: topDevices
+                devices: topDevices,
+                countries: topCountries
             }
         }), {
             status: 200,

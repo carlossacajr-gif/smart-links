@@ -106,32 +106,32 @@ export default function LoginForm() {
 
                     <motion.h1
                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }}
-                        className="text-4xl font-display font-semibold text-zinc-900 dark:text-white tracking-tight leading-tight mb-2 transition-colors"
+                        className="text-4xl font-display font-bold text-zinc-900 dark:text-white tracking-tight leading-tight mb-2 transition-colors"
                     >
-                        Entrar a la <br />Plataforma.
+                        Acceso seguro
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.8 }}
-                        className="text-zinc-500 dark:text-zinc-400 text-sm font-medium mb-10 transition-colors"
+                        className="text-zinc-500 dark:text-zinc-400 text-[15px] font-medium mb-10 transition-colors"
                     >
-                        Si tu cuenta no existe, la crearemos al vuelo.
+                        Si no tienes cuenta, te crearemos una al vuelo.
                     </motion.p>
 
                     <form onSubmit={handleAuth} className="space-y-7">
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.8 }}>
-                            <label className="sr-only">Correo electrónico</label>
+                            <label className="block text-[11px] font-bold tracking-[0.14em] text-zinc-500 mb-3 uppercase">Correo electrónico</label>
                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-white/50 dark:bg-[#0a0a0c]/60 border border-zinc-200 dark:border-white/5 py-[1.125rem] px-6 rounded-[1.25rem] text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-4 focus:ring-[#EB3333]/20 focus:border-[#EB3333]/50 transition-all font-medium backdrop-blur-sm"
-                                placeholder="usuario@saca.network"
+                                placeholder="saca@red.com"
                             />
                         </motion.div>
 
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8 }}>
-                            <label className="sr-only">Contraseña</label>
+                            <label className="block text-[11px] font-bold tracking-[0.14em] text-zinc-500 mb-3 uppercase">Contraseña</label>
                             <input
                                 type="password"
                                 required
@@ -161,11 +161,11 @@ export default function LoginForm() {
                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.8 }}
                             onMouseEnter={() => setIsHoveringBtn(true)}
                             onMouseLeave={() => setIsHoveringBtn(false)}
-                            className="w-full bg-[#EB3333] hover:bg-[#D12B2B] text-white shadow-[0_4px_24px_rgba(235,51,51,0.3)] hover:shadow-[0_8px_32px_rgba(235,51,51,0.5)] py-[1.125rem] px-8 rounded-[1.25rem] text-[15px] font-semibold tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98] relative overflow-hidden group/btn mt-4"
+                            className="w-full bg-[#EB3333] hover:bg-[#D12B2B] text-white shadow-[0_4px_24px_rgba(235,51,51,0.3)] hover:shadow-[0_8px_32px_rgba(235,51,51,0.5)] py-[1.125rem] px-8 rounded-[1.25rem] text-[15px] font-bold tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98] relative overflow-hidden group/btn mt-4"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite] group-hover/btn:translate-x-[150%] transition-transform duration-700"></div>
 
-                            <span className="relative z-10">{loading ? 'Autenticando...' : 'Acceder al Dashboard'}</span>
+                            <span className="relative z-10">{loading ? 'Autenticando...' : 'Acceder'}</span>
 
                             {!loading && (
                                 <ArrowRight

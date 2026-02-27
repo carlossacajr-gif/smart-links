@@ -36,6 +36,11 @@ try {
   console.log("Error fetching youtube metadata for SSR", e);
 }
 
+// Prioridad a Metadatos Personalizados (Premium Customizer)
+if (link.custom_title) videoTitle = link.custom_title;
+if (link.custom_image) thumbnailUrl = link.custom_image;
+const videoDescription = link.custom_description || videoTitle;
+
 // 3. User-Agent info (Client IP cannot be accurately fetched in edge without Cloudflare specific headers sometimes, so we rely on client-side JS for the track as requested).
 ---
 
@@ -47,7 +52,9 @@ try {
   
   <!-- SEO & Social Open Graph Tags -->
   <title>{videoTitle}</title>
+  <meta name="description" content={videoDescription} />
   <meta property="og:title" content={videoTitle} />
+  <meta property="og:description" content={videoDescription} />
   <meta property="og:type" content="video.other" />
   <meta property="og:image" content={thumbnailUrl} />
   <meta property="og:url" content={`https://smart-links-699.pages.dev/${alias}`} />
@@ -55,6 +62,7 @@ try {
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={videoTitle} />
+  <meta name="twitter:description" content={videoDescription} />
   <meta name="twitter:image" content={thumbnailUrl} />
 
   <!-- Preconnect para velocidad de imagen -->

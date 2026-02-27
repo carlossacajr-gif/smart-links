@@ -4,6 +4,7 @@ import { Copy, Plus, Activity, Youtube, Trash2, ExternalLink, Loader2, Link as L
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils/cn';
 import QRCode from "react-qr-code";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 
 export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) {
     const [links, setLinks] = useState(initialLinks);
@@ -14,6 +15,15 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [activeQrId, setActiveQrId] = useState<string | null>(null);
+    const [activeChartId, setActiveChartId] = useState<string | null>(null);
+    const [chartData, setChartData] = useState<any[]>([]);
+    const [chartLoading, setChartLoading] = useState(false);
+
+    // Meta-datos personalizados
+    const [customTitle, setCustomTitle] = useState('');
+    const [customDescription, setCustomDescription] = useState('');
+    const [customImage, setCustomImage] = useState('');
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     const currentDomain = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -54,7 +64,13 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             const res = await fetch('/api/links', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, alias: finalAlias })
+                body: JSON.stringify({
+                    url,
+                    alias: finalAlias,
+                    custom_title: customTitle.trim() || null,
+                    custom_description: customDescription.trim() || null,
+                    custom_image: customImage.trim() || null
+                })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al generar enlace');
@@ -62,6 +78,10 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             setLinks([data.data, ...links]);
             setUrl('');
             setAlias('');
+            setCustomTitle('');
+            setCustomDescription('');
+            setCustomImage('');
+            setShowAdvanced(false);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -106,15 +126,40 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
         img.src = "data:image/svg+xml;base64," + btoa(svgData);
     };
 
+    const toggleChart = async (linkId: string) => {
+        if (activeChartId === linkId) {
+            setActiveChartId(null);
+            return;
+        }
+
+        setActiveChartId(linkId);
+        setActiveQrId(null);
+        setChartLoading(true);
+        try {
+            const res = await fetch(`/api/analytics?link_id=${linkId}`);
+            const data = await res.json();
+            if (res.ok && data.data) {
+                setChartData(data.data);
+            } else {
+                setChartData([]);
+            }
+        } catch (e) {
+            console.error(e);
+            setChartData([]);
+        } finally {
+            setChartLoading(false);
+        }
+    };
+
     return (
         <div className="w-full flex flex-col xl:flex-row gap-8 lg:gap-12 items-start relative z-10 pb-20">
 
-            {/* Columna Izquierda: Generador Flotante (Glassmorphism 2026) */}
+            {/* Columna Izquierda: Generador Flotante (Apple Material) */}
             <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full xl:w-[420px] flex-shrink-0 glass-panel rounded-[2rem] p-8 xl:p-10 sticky top-10"
+                className="w-full xl:w-[420px] flex-shrink-0 bg-white dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/5 shadow-2xl shadow-black/5 dark:shadow-black/50 rounded-[2rem] p-8 xl:p-10 sticky top-10"
             >
                 {/* Toggle Theme Positioned Absolutamente en Móvil, Header en Desktop */}
                 <button
@@ -171,6 +216,61 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                         </div>
                     </div>
 
+                    <div className="pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowAdvanced(!showAdvanced)}
+                            className="text-[13px] font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors flex items-center gap-1.5"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cn("transition-transform duration-300", showAdvanced ? "rotate-90" : "")}><path d="m9 18 6-6-6-6" /></svg>
+                            Metadatos Personalizados {showAdvanced ? "(Ocultar)" : "(Opcional)"}
+                        </button>
+
+                        <AnimatePresence>
+                            {showAdvanced && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    className="overflow-hidden space-y-4"
+                                >
+                                    <div className="p-4 bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-2xl space-y-4">
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Título Público</label>
+                                            <input
+                                                type="text"
+                                                value={customTitle}
+                                                onChange={(e) => setCustomTitle(e.target.value)}
+                                                className="block w-full px-3 py-2.5 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
+                                                placeholder="Ej: Nuevo Video Oficial..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Descripción</label>
+                                            <input
+                                                type="text"
+                                                value={customDescription}
+                                                onChange={(e) => setCustomDescription(e.target.value)}
+                                                className="block w-full px-3 py-2.5 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
+                                                placeholder="Breve sumario persuasivo"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Thumbnail (URL opcional)</label>
+                                            <input
+                                                type="url"
+                                                value={customImage}
+                                                onChange={(e) => setCustomImage(e.target.value)}
+                                                className="block w-full px-3 py-2.5 bg-white dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-xl text-sm text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all"
+                                                placeholder="https://tu-sitio.com/imagen.jpg"
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     <AnimatePresence>
                         {error && (
                             <motion.div
@@ -190,7 +290,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="group relative w-full flex items-center justify-center py-[1.125rem] px-8 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[15px] font-bold tracking-wide rounded-[1.25rem] transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden shadow-[0_4px_24px_rgba(235,51,51,0.3)] hover:shadow-[0_8px_32px_rgba(235,51,51,0.5)] active:scale-[0.98] mt-4"
+                        className="group relative w-full flex items-center justify-center py-[1.125rem] px-8 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[15px] font-bold tracking-wide rounded-[1.25rem] transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden active:scale-[0.98] mt-4"
                     >
                         {/* Brillo sobre el botón */}
                         <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
@@ -254,7 +354,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                         key={link.id}
-                                        className="group flex flex-col p-6 md:p-8 glass-panel rounded-[2rem] transition-all hover:border-[#EB3333]/40 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] hover:shadow-[0_8px_32px_rgba(235,51,51,0.08)] bg-white/70 dark:bg-[#121214]/60"
+                                        className="group flex flex-col p-6 md:p-8 bg-white dark:bg-[#0A0A0A] border border-zinc-200 dark:border-white/5 rounded-[2rem] transition-all duration-300 hover:shadow-xl hover:border-zinc-300 dark:hover:border-white/10"
                                     >
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between">
                                             <div className="flex-1 min-w-0 pr-6">
@@ -276,11 +376,24 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
 
                                             <div className="flex items-center gap-4 mt-6 sm:mt-0 pt-6 sm:pt-0 border-t border-zinc-200 sm:border-t-0 dark:border-white/10 sm:pl-6 justify-between sm:justify-end">
 
-                                                {/* Metric Pill */}
-                                                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/5 shadow-inner" aria-label="Total Clicks">
-                                                    <Activity className="w-4 h-4 text-emerald-500 dark:text-emerald-400/80" />
-                                                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{clickCount} <span className="text-zinc-500 font-normal ml-1">clicks</span></span>
-                                                </div>
+                                                {/* Metric Pill as a Button */}
+                                                <button
+                                                    onClick={() => toggleChart(link.id)}
+                                                    className={cn(
+                                                        "flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 border",
+                                                        activeChartId === link.id
+                                                            ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                                            : "bg-white/50 dark:bg-black/40 border-zinc-200 dark:border-white/5 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 shadow-inner"
+                                                    )}
+                                                    aria-label="Ver analítica"
+                                                    title="Ver analítica de clics"
+                                                >
+                                                    <Activity className={cn("w-4 h-4", activeChartId === link.id ? "text-emerald-500 dark:text-emerald-400" : "text-emerald-500 dark:text-emerald-400/80")} />
+                                                    <span className={cn("text-sm font-semibold", activeChartId === link.id ? "text-emerald-700 dark:text-emerald-300" : "text-zinc-900 dark:text-zinc-200")}>
+                                                        {clickCount} <span className="font-normal ml-1 opacity-70">clicks</span>
+                                                    </span>
+                                                    <BarChart3 className="w-3.5 h-3.5 ml-1 opacity-50 hidden sm:block" />
+                                                </button>
 
                                                 <div className="flex items-center gap-2">
                                                     <button
@@ -307,7 +420,10 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     </button>
 
                                                     <button
-                                                        onClick={() => setActiveQrId(activeQrId === link.id ? null : link.id)}
+                                                        onClick={() => {
+                                                            setActiveQrId(activeQrId === link.id ? null : link.id);
+                                                            setActiveChartId(null);
+                                                        }}
                                                         className={cn(
                                                             "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 active:scale-95 border",
                                                             activeQrId === link.id
@@ -328,44 +444,119 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     </button>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            <AnimatePresence>
-                                                {activeQrId === link.id && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                                        animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
-                                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                                        className="overflow-hidden border-t border-zinc-200 dark:border-white/10"
-                                                    >
-                                                        <div className="pt-6 flex flex-col items-center gap-6">
-                                                            <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex-shrink-0">
-                                                                <QRCode
-                                                                    id={`qr-${link.id}`}
-                                                                    value={shortUrl}
-                                                                    size={140}
-                                                                    level="H"
-                                                                    fgColor="#18181b"
-                                                                    bgColor="#ffffff"
-                                                                />
+                                        <AnimatePresence>
+                                            {activeQrId === link.id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="pt-8 mt-6 border-t border-zinc-200 dark:border-white/10 flex flex-col items-center gap-6">
+                                                        <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex-shrink-0">
+                                                            <QRCode
+                                                                id={`qr-${link.id}`}
+                                                                value={shortUrl}
+                                                                size={140}
+                                                                level="H"
+                                                                fgColor="#18181b"
+                                                                bgColor="#ffffff"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1 text-center space-y-4 w-full">
+                                                            <div>
+                                                                <h4 className="text-[15px] font-bold text-zinc-900 dark:text-white">Código Escaneable</h4>
+                                                                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-4 leading-relaxed max-w-sm mx-auto">Coloca este QR en tus empaques, pantallas o videos. Al escanearlo, activará la redirección instantánea Saca.</p>
                                                             </div>
-                                                            <div className="flex-1 text-center space-y-4 w-full">
-                                                                <div>
-                                                                    <h4 className="text-[15px] font-bold text-zinc-900 dark:text-white">Código Escaneable</h4>
-                                                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-4 leading-relaxed max-w-sm mx-auto">Coloca este QR en tus empaques, pantallas o videos. Al escanearlo, activará la redirección instantánea Saca.</p>
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => downloadQR(link.id, link.alias)}
-                                                                    className="inline-flex items-center justify-center gap-2 py-2.5 px-6 w-full sm:w-auto bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-semibold rounded-xl text-[15px] transition-colors active:scale-95 mx-auto"
-                                                                >
-                                                                    <Download className="w-4 h-4" />
-                                                                    Descargar
-                                                                </button>
+                                                            <button
+                                                                onClick={() => downloadQR(link.id, link.alias)}
+                                                                className="inline-flex items-center justify-center gap-2 py-2.5 px-6 w-full sm:w-auto bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-semibold rounded-xl text-[15px] transition-colors active:scale-95 mx-auto"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                                Descargar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        <AnimatePresence>
+                                            {activeChartId === link.id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="pt-8 mt-6 border-t border-zinc-200 dark:border-white/10">
+                                                        <div className="flex items-center justify-between mb-6 px-2">
+                                                            <div>
+                                                                <h4 className="text-[15px] font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                                                                    <BarChart3 className="w-4 h-4 text-[#EB3333]" /> Rendimiento (7 días)
+                                                                </h4>
+                                                                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Evolución de clics diarios</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-2xl font-display font-semibold text-zinc-900 dark:text-white">{clickCount}</div>
+                                                                <div className="text-[11px] font-bold tracking-wider text-emerald-500 uppercase">Total</div>
                                                             </div>
                                                         </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
+
+                                                        <div className="h-[200px] w-full -ml-4">
+                                                            {chartLoading ? (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <Loader2 className="w-6 h-6 animate-spin text-zinc-300 dark:text-zinc-600" />
+                                                                </div>
+                                                            ) : chartData.length > 0 ? (
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                    <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                                                                        <defs>
+                                                                            <linearGradient id="colorClics" x1="0" y1="0" x2="0" y2="1">
+                                                                                <stop offset="5%" stopColor="#EB3333" stopOpacity={0.4} />
+                                                                                <stop offset="95%" stopColor="#EB3333" stopOpacity={0} />
+                                                                            </linearGradient>
+                                                                        </defs>
+                                                                        <XAxis
+                                                                            dataKey="date"
+                                                                            axisLine={false}
+                                                                            tickLine={false}
+                                                                            tick={{ fontSize: 11, fill: '#71717a' }}
+                                                                            dy={10}
+                                                                        />
+                                                                        <Tooltip
+                                                                            contentStyle={{
+                                                                                backgroundColor: theme === 'dark' ? '#18181b' : '#ffffff',
+                                                                                borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                                                                borderRadius: '12px',
+                                                                                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                                                                color: theme === 'dark' ? '#fff' : '#000'
+                                                                            }}
+                                                                            itemStyle={{ color: '#EB3333', fontWeight: 'bold' }}
+                                                                            labelStyle={{ color: '#71717a', marginBottom: '4px' }}
+                                                                        />
+                                                                        <Area
+                                                                            type="monotone"
+                                                                            dataKey="clics"
+                                                                            stroke="#EB3333"
+                                                                            strokeWidth={2}
+                                                                            fillOpacity={1}
+                                                                            fill="url(#colorClics)"
+                                                                        />
+                                                                    </AreaChart>
+                                                                </ResponsiveContainer>
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <p className="text-zinc-500 text-sm">Sin datos suficientes.</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </motion.div>
                                 );
                             })}

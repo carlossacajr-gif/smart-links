@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
         }
 
-        const { url, alias } = await request.json();
+        const { url, alias, custom_title, custom_description, custom_image } = await request.json();
 
         if (!url || !url.includes("youtu")) {
             return new Response(JSON.stringify({ error: "Invalid YouTube URL" }), { status: 400 });
@@ -29,7 +29,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                 {
                     original_url: url,
                     alias: alias.toLowerCase(),
-                    user_id: user.id
+                    user_id: user.id,
+                    custom_title,
+                    custom_description,
+                    custom_image
                 }
             ])
             .select()

@@ -40,18 +40,12 @@ const { title } = Astro.props;
 </head>
 <body class="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] antialiased overflow-x-hidden relative transition-colors duration-700">
   
-  <!-- CSS Orbs Animados (Cristalismo Orgánico adaptable a Claro/Oscuro) -->
-  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-    <div class="absolute inset-0 bg-[url('/noise.webp')] opacity-[0.04] dark:opacity-[0.03] mix-blend-overlay"></div>
+  <!-- Fondo Premium Inmaculado (Stripe/Vercel Style) -->
+  <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none bg-zinc-50 dark:bg-[#050505]">
+    <div class="absolute inset-0 bg-[url('/noise.webp')] opacity-[0.03] mix-blend-overlay"></div>
     
-    <!-- Saca Red Orb (Cambiando el Índigo genérico) -->
-    <div class="absolute -top-[20%] -right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#EB3333]/15 dark:bg-[#EB3333]/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob"></div>
-    
-    <!-- Secondary Orb (Acentuador Cálido) -->
-    <div class="absolute -bottom-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#ff7b00]/10 dark:bg-[#ff7b00]/10 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000"></div>
-    
-    <!-- Tercer Orbe Neutral -->
-    <div class="absolute top-[20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-zinc-400/20 dark:bg-zinc-800/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-4000"></div>
+    <!-- Unico y sutil resplandor cenital -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white/40 dark:bg-white/[0.02] blur-[100px] rounded-full pointer-events-none"></div>
   </div>
   
   <slot />
@@ -84,9 +78,9 @@ const { title } = Astro.props;
     /* Configuración de Dark Mode (Fondo Premium y Alto Contraste) */
     --bg-main: #050505;
     --text-main: #FAFAFA;
-    --glass-bg: linear-gradient(145deg, rgba(23, 23, 23, 0.4), rgba(10, 10, 10, 0.6));
+    --glass-bg: rgba(10, 10, 10, 0.7);
     --glass-border: rgba(255, 255, 255, 0.05);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
   }
 
   /* Utilidad Universal actualizable para el Glassmorphism UI */

@@ -45,7 +45,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const [activeQrId, setActiveQrId] = useState<string | null>(null);
     const [activeChartId, setActiveChartId] = useState<string | null>(null);
     const [chartData, setChartData] = useState<any>(null);
-    const [chartLoading, setChartLoading] = useState(false);
+    const [loadingChartId, setLoadingChartId] = useState<string | null>(null);
 
     // Modal y Selección
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -179,14 +179,15 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             return;
         }
 
-        setActiveChartId(linkId);
         setActiveQrId(null);
-        setChartLoading(true);
+        setLoadingChartId(linkId);
         try {
             const res = await fetch(`/api/analytics?link_id=${linkId}`);
             const data = await res.json();
             if (res.ok && data.data) {
                 setChartData(data.data);
+                // Expand the chart ONLY after data is ready, preventing the layout shift jump
+                setActiveChartId(linkId);
             } else {
                 setChartData(null);
             }
@@ -194,7 +195,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             console.error(e);
             setChartData(null);
         } finally {
-            setChartLoading(false);
+            setLoadingChartId(null);
         }
     };
 
@@ -359,7 +360,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-[460px] bg-white border border-zinc-200 shadow-2xl rounded-[2rem] p-8 sm:p-10 z-10"
+                            className="relative w-full max-w-[460px] max-h-[90vh] overflow-y-auto scrollbar-none bg-white border border-zinc-200 shadow-2xl rounded-[2rem] p-8 sm:p-10 z-10"
                         >
                             <button
                                 onClick={() => setIsCreateModalOpen(false)}
@@ -507,7 +508,27 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                 className="w-full space-y-4"
             >
 
-                {links.length === 0 ? (
+                {/* Permanent Folders Navigation Global */}
+                <div className="w-full mb-6">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none px-2 sm:px-0">
+                        {folders.map(folder => (
+                            <button
+                                key={folder}
+                                onClick={() => setActiveFolder(folder)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all flex-shrink-0 active:scale-95 border",
+                                    activeFolder === folder
+                                        ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
+                                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                )}
+                            >
+                                {folder}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {filteredLinks.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                         className="p-16 bg-white border border-zinc-200 rounded-3xl flex flex-col items-center justify-center text-center shadow-sm"
@@ -546,26 +567,6 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Folders Navigation */}
-                                {folders.length > 1 && (
-                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-                                        {folders.map(folder => (
-                                            <button
-                                                key={folder}
-                                                onClick={() => setActiveFolder(folder)}
-                                                className={cn(
-                                                    "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all flex-shrink-0 active:scale-95 border",
-                                                    activeFolder === folder
-                                                        ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
-                                                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                                                )}
-                                            >
-                                                {folder}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -657,7 +658,11 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     aria-label="Ver analítica"
                                                     title="Ver analítica de clics"
                                                 >
-                                                    <Activity className={cn("w-4 h-4", activeChartId === link.id ? "text-emerald-500" : "text-emerald-500")} />
+                                                    {loadingChartId === link.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                                                    ) : (
+                                                        <Activity className={cn("w-4 h-4", activeChartId === link.id ? "text-emerald-500" : "text-emerald-500")} />
+                                                    )}
                                                     <span className={cn("text-sm font-semibold", activeChartId === link.id ? "text-emerald-700" : "text-zinc-900")}>
                                                         {clickCount} <span className="font-normal ml-1 opacity-70">clicks</span>
                                                     </span>
@@ -776,11 +781,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         </div>
 
                                                         <div className="w-full -ml-4">
-                                                            {chartLoading ? (
-                                                                <div className="w-full h-[200px] flex items-center justify-center">
-                                                                    <Loader2 className="w-6 h-6 animate-spin text-zinc-300" />
-                                                                </div>
-                                                            ) : chartData && chartData.timeline && chartData.timeline.length > 0 ? (
+                                                            {chartData && chartData.timeline && chartData.timeline.length > 0 ? (
                                                                 <div className="flex flex-col gap-6 w-full ml-4">
                                                                     <div className="h-[200px] w-full -ml-4">
                                                                         <ResponsiveContainer width="100%" height="100%">

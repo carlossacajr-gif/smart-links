@@ -18,7 +18,7 @@ if (accessToken && refreshToken) {
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none mix-blend-screen"></div>
     
     <div class="w-full relative z-10">
-      <LoginForm client:load />
+      <LoginForm client:only="react" />
     </div>
   </main>
 </Layout>

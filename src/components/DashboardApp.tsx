@@ -87,7 +87,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full xl:w-[400px] flex-shrink-0 glass-panel rounded-3xl p-8 sticky top-10"
+                className="w-full xl:w-[420px] flex-shrink-0 glass-panel rounded-[2rem] p-8 xl:p-10 sticky top-10"
             >
                 {/* Toggle Theme Positioned Absolutamente en Móvil, Header en Desktop */}
                 <button
@@ -97,18 +97,18 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                     {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
 
-                <div className="mb-8">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EB3333]/10 border border-[#EB3333]/20 mb-4">
+                <div className="mb-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EB3333]/10 border border-[#EB3333]/20 mb-5">
                         <Plus className="w-4 h-4 text-[#EB3333]" />
-                        <span className="text-xs font-semibold text-[#EB3333] uppercase tracking-widest">Crear Link</span>
+                        <span className="text-[11px] font-bold text-[#EB3333] uppercase tracking-widest">Crear Saca Link</span>
                     </div>
-                    <h2 className="text-2xl font-display font-semibold transition-colors text-zinc-900 dark:text-white tracking-tight">Nuevo Smart Link</h2>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 leading-relaxed">Pega la URL del video e inyectaremos la mejor vía de redirección nativa en iOS y Android.</p>
+                    <h2 className="text-3xl font-display font-semibold transition-colors text-zinc-900 dark:text-white tracking-tight">Potenciar URL</h2>
+                    <p className="text-[15px] text-zinc-500 dark:text-zinc-400 mt-3 leading-relaxed">Pega la URL del video e inyectaremos la mejor vía de redirección nativa en iOS y Android.</p>
                 </div>
 
-                <form onSubmit={createLink} className="space-y-6">
+                <form onSubmit={createLink} className="space-y-7">
                     <div className="group">
-                        <label className="block text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-2.5 transition-colors group-focus-within:text-[#EB3333]">
+                        <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3 transition-colors group-focus-within:text-[#EB3333]">
                             Original YouTube URL
                         </label>
                         <div className="relative">
@@ -120,15 +120,15 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                 required
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                className="block w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-medium"
+                                className="block w-full pl-[3.25rem] pr-4 py-4 bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-[1.25rem] text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-medium"
                                 placeholder="https://youtu.be/..."
                             />
                         </div>
                     </div>
 
                     <div className="group">
-                        <label className="block text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-2.5 transition-colors group-focus-within:text-[#EB3333]">
-                            Alias Personalizado <span className="text-zinc-400 dark:text-zinc-600 font-normal opacity-70 ml-1">(Opcional)</span>
+                        <label className="block text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-3 transition-colors group-focus-within:text-[#EB3333]">
+                            Alias Personalizado <span className="text-zinc-400 dark:text-zinc-600 font-normal opacity-70 ml-1 tracking-normal">(Opcional)</span>
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -138,7 +138,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                 type="text"
                                 value={alias}
                                 onChange={(e) => setAlias(e.target.value.replace(/[^a-zA-Z0-9-]/g, ''))}
-                                className="block w-full pl-11 pr-4 py-4 bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-mono text-sm tracking-wide"
+                                className="block w-full pl-[3.25rem] pr-4 py-4 bg-white/50 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-[1.25rem] text-[15px] text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-mono tracking-wide"
                                 placeholder="mi-super-video"
                             />
                         </div>
@@ -163,7 +163,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="group relative w-full flex items-center justify-center py-4 px-6 bg-[#EB3333] hover:bg-[#D12B2B] text-white font-semibold rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden shadow-[0_4px_24px_rgba(235,51,51,0.3)] hover:shadow-[0_8px_32px_rgba(235,51,51,0.5)] active:scale-[0.98]"
+                        className="group relative w-full flex items-center justify-center py-[1.125rem] px-8 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[15px] font-semibold tracking-wide rounded-[1.25rem] transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden shadow-[0_4px_24px_rgba(235,51,51,0.3)] hover:shadow-[0_8px_32px_rgba(235,51,51,0.5)] active:scale-[0.98] mt-4"
                     >
                         {/* Brillo sobre el botón */}
                         <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] animate-[shimmer_2s_infinite] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
@@ -227,7 +227,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                         key={link.id}
-                                        className="group flex flex-col sm:flex-row sm:items-center justify-between p-5 md:p-6 glass-panel rounded-3xl transition-all hover:border-[#EB3333]/40 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] hover:shadow-[0_8px_32px_rgba(235,51,51,0.08)] bg-white/70 dark:bg-[#121214]/60"
+                                        className="group flex flex-col sm:flex-row sm:items-center justify-between p-6 md:p-8 glass-panel rounded-[2rem] transition-all hover:border-[#EB3333]/40 hover:bg-black/[0.02] dark:hover:bg-white/[0.03] hover:shadow-[0_8px_32px_rgba(235,51,51,0.08)] bg-white/70 dark:bg-[#121214]/60"
                                     >
 
                                         <div className="flex-1 min-w-0 pr-6">

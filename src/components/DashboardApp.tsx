@@ -645,7 +645,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-4 mt-6 sm:mt-0 pt-6 sm:pt-0 border-t border-zinc-200 sm:border-t-0 sm:pl-6 justify-between sm:justify-end">
+                                            <div className="flex items-center gap-2 sm:gap-4 mt-6 sm:mt-0 pt-6 sm:pt-0 border-t border-zinc-200 sm:border-t-0 sm:pl-6 justify-between sm:justify-end flex-shrink-0 sm:w-[280px]">
 
                                                 {/* Metric Pill as a Button */}
                                                 <button
@@ -667,7 +667,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     <span className={cn("text-sm font-semibold", activeChartId === link.id ? "text-emerald-700" : "text-zinc-900")}>
                                                         {clickCount} <span className="font-normal ml-1 opacity-70">clicks</span>
                                                     </span>
-                                                    <BarChart3 className="w-3.5 h-3.5 ml-1 opacity-50 hidden sm:block" />
+                                                    <BarChart3 className="w-3.5 h-3.5 ml-1 opacity-50 hidden sm:block flex-shrink-0" />
                                                 </button>
 
                                                 <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Link as LinkIcon, Activity, Maximize2, X, Plus, LogOut, Check, Copy, Settings, Search, RefreshCw, Smartphone, Monitor, Globe, ChevronRight, BarChart3, Clock, MousePointerClick, QrCode, Download, Trash2, ArrowUpRight, CopyCheck, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { Link as LinkIcon, Activity, Maximize2, X, Plus, LogOut, Check, Copy, Settings, Search, RefreshCw, Smartphone, Monitor, Globe, ChevronRight, BarChart3, Clock, MousePointerClick, QrCode, Download, Trash2, ArrowUpRight, CopyCheck, AlertCircle, Loader2, ExternalLink, Youtube, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils/cn';
 import QRCode from "react-qr-code";

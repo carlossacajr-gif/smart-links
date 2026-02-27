@@ -6,6 +6,7 @@ CREATE TABLE public.links (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     original_url TEXT NOT NULL,
     alias TEXT NOT NULL UNIQUE,
+    folder TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE
 );

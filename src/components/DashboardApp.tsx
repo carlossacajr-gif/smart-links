@@ -63,6 +63,13 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
 
     const currentDomain = typeof window !== 'undefined' ? window.location.origin : '';
 
+    // Folders state
+    const [customFolder, setCustomFolder] = useState('');
+    const [activeFolder, setActiveFolder] = useState('Todas');
+    const folders = ['Todas', ...Array.from(new Set(links.map((l: any) => l.folder).filter(Boolean)))];
+
+    const filteredLinks = activeFolder === 'Todas' ? links : links.filter((l: any) => l.folder === activeFolder);
+
     // Computed KPI Stats
     const totalClicks = links.reduce((sum: number, l: any) => sum + (l.clicks?.[0]?.count || 0), 0);
     const topPerformer = links.length > 0
@@ -95,7 +102,8 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                     alias: finalAlias,
                     custom_title: customTitle.trim() || null,
                     custom_description: customDescription.trim() || null,
-                    custom_image: customImage.trim() || null
+                    custom_image: customImage.trim() || null,
+                    folder: customFolder.trim() || null
                 })
             });
             const data = await res.json();
@@ -450,6 +458,16 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         />
                                                     </div>
                                                     <div>
+                                                        <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Carpeta (Grouping)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={customFolder}
+                                                            onChange={(e) => setCustomFolder(e.target.value)}
+                                                            className="block w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-2 focus:ring-[#EB3333]/10 transition-all font-medium"
+                                                            placeholder="Ej: YouTube Shorts, Instagram Bio..."
+                                                        />
+                                                    </div>
+                                                    <div>
                                                         <label className="block text-[10px] font-bold tracking-[0.1em] text-zinc-500 mb-2 uppercase">Thumbnail (URL opcional)</label>
                                                         <input
                                                             type="url"
@@ -510,27 +528,49 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {/* Header Inteligente: "Tus enlaces" o "Seleccionar Todos" */}
-                        {links.length > 0 && (
-                            <div className="flex items-center justify-between px-2 mb-2">
-                                <h3 className="text-lg font-display font-semibold text-zinc-900 tracking-tight">Tus enlaces</h3>
+                        {filteredLinks.length > 0 && (
+                            <div className="flex flex-col gap-4 px-2 mb-2">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-display font-semibold text-zinc-900 tracking-tight">Tus enlaces</h3>
 
-                                {selectedLinks.length > 0 && (
-                                    <div className="flex items-center animate-in fade-in zoom-in duration-300">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedLinks.length === links.length}
-                                            onChange={(e) => handleSelectAll(e.target.checked)}
-                                            className="w-4 h-4 rounded border-zinc-300 text-[#EB3333] focus:ring-[#EB3333] cursor-pointer"
-                                            id="select-all-top"
-                                        />
-                                        <label htmlFor="select-all-top" className="ml-2 text-sm font-semibold text-zinc-600 cursor-pointer">Seleccionar {links.length}</label>
+                                    {selectedLinks.length > 0 && (
+                                        <div className="flex items-center animate-in fade-in zoom-in duration-300">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedLinks.length === filteredLinks.length}
+                                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                                className="w-4 h-4 rounded border-zinc-300 text-[#EB3333] focus:ring-[#EB3333] cursor-pointer"
+                                                id="select-all-top"
+                                            />
+                                            <label htmlFor="select-all-top" className="ml-2 text-sm font-semibold text-zinc-600 cursor-pointer">Seleccionar {filteredLinks.length}</label>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Folders Navigation */}
+                                {folders.length > 1 && (
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+                                        {folders.map(folder => (
+                                            <button
+                                                key={folder}
+                                                onClick={() => setActiveFolder(folder)}
+                                                className={cn(
+                                                    "px-4 py-1.5 rounded-full text-[13px] font-medium transition-all flex-shrink-0 active:scale-95 border",
+                                                    activeFolder === folder
+                                                        ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
+                                                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                                                )}
+                                            >
+                                                {folder}
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
                             </div>
                         )}
 
                         <AnimatePresence mode="popLayout">
-                            {links.slice(0, visibleCount).map((link) => {
+                            {filteredLinks.slice(0, visibleCount).map((link: any) => {
                                 const shortUrl = `${currentDomain}/${link.alias}`;
                                 const clickCount = link.clicks && link.clicks[0] ? link.clicks[0].count : 0;
                                 const isCopied = copiedId === link.id;
@@ -541,7 +581,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 35, mass: 0.8 }}
+                                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                         key={link.id}
                                         className={cn(
                                             "group flex flex-col p-5 md:p-6 bg-white border rounded-2xl transition-all shadow-sm hover:shadow-md",
@@ -681,7 +721,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     initial={{ opacity: 0, height: 0 }}
                                                     animate={{ opacity: 1, height: 'auto' }}
                                                     exit={{ opacity: 0, height: 0 }}
-                                                    transition={{ type: "spring", stiffness: 400, damping: 35, mass: 0.8 }}
+                                                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                                 >
                                                     <div className="pt-8 pb-4 px-2 mt-6 border-t border-zinc-200 flex flex-col items-center gap-6 overflow-hidden">
                                                         <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex-shrink-0">
@@ -718,6 +758,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     initial={{ opacity: 0, height: 0 }}
                                                     animate={{ opacity: 1, height: 'auto' }}
                                                     exit={{ opacity: 0, height: 0 }}
+                                                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                                     className="overflow-hidden"
                                                 >
                                                     <div className="pt-8 mt-6 border-t border-zinc-200">
@@ -833,13 +874,13 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                         </AnimatePresence>
 
                         {/* Progressive Disclosure: Load More (Design Principle #3) */}
-                        {visibleCount < links.length && (
+                        {visibleCount < filteredLinks.length && (
                             <div className="flex justify-center pt-4">
                                 <button
                                     onClick={() => setVisibleCount(prev => prev + LINKS_PER_PAGE)}
                                     className="flex items-center gap-2 px-8 py-3 border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 text-sm font-semibold rounded-full transition-all active:scale-[0.97] shadow-sm hover:shadow-md"
                                 >
-                                    Cargar {Math.min(LINKS_PER_PAGE, links.length - visibleCount)} más de {links.length - visibleCount}
+                                    Cargar {Math.min(LINKS_PER_PAGE, filteredLinks.length - visibleCount)} más de {filteredLinks.length - visibleCount}
                                 </button>
                             </div>
                         )}

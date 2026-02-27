@@ -16,7 +16,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
         }
 
-        const { url, alias, custom_title, custom_description, custom_image } = await request.json();
+        const { url, alias, custom_title, custom_description, custom_image, folder } = await request.json();
 
         if (!url || !url.startsWith("http")) {
             return new Response(JSON.stringify({ error: "URL inválida. Debe incluir http o https." }), { status: 400 });
@@ -32,7 +32,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
                     user_id: user.id,
                     custom_title,
                     custom_description,
-                    custom_image
+                    custom_image,
+                    folder: folder?.trim() || null
                 }
             ])
             .select()

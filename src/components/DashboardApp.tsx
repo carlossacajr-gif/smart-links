@@ -337,7 +337,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                                                         className="overflow-hidden border-t border-zinc-200 dark:border-white/10"
                                                     >
-                                                        <div className="pt-6 flex flex-col sm:flex-row items-center gap-6">
+                                                        <div className="pt-6 flex flex-col items-center gap-6">
                                                             <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex-shrink-0">
                                                                 <QRCode
                                                                     id={`qr-${link.id}`}
@@ -348,17 +348,17 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                                     bgColor="#ffffff"
                                                                 />
                                                             </div>
-                                                            <div className="flex-1 text-center sm:text-left space-y-4">
+                                                            <div className="flex-1 text-center space-y-4 w-full">
                                                                 <div>
                                                                     <h4 className="text-[15px] font-bold text-zinc-900 dark:text-white">Código Escaneable</h4>
-                                                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed max-w-sm">Coloca este QR en tus empaques, pantallas o videos. Al escanearlo, activará la redirección instantánea Saca.</p>
+                                                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-4 leading-relaxed max-w-sm mx-auto">Coloca este QR en tus empaques, pantallas o videos. Al escanearlo, activará la redirección instantánea Saca.</p>
                                                                 </div>
                                                                 <button
                                                                     onClick={() => downloadQR(link.id, link.alias)}
-                                                                    className="inline-flex items-center justify-center gap-2 py-2.5 px-5 bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-semibold rounded-xl text-sm transition-colors active:scale-95"
+                                                                    className="inline-flex items-center justify-center gap-2 py-2.5 px-6 w-full sm:w-auto bg-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-black font-semibold rounded-xl text-[15px] transition-colors active:scale-95 mx-auto"
                                                                 >
                                                                     <Download className="w-4 h-4" />
-                                                                    Descargar Alta Calidad
+                                                                    Descargar
                                                                 </button>
                                                             </div>
                                                         </div>

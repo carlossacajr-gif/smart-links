@@ -108,9 +108,38 @@ try {
     }
 
     /* Spinner 2026 Trend: Minimalista, Delgado y Magnético */
+    .thumbnail-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,255,255,0.15);
+      background: #111;
+      margin-bottom: -10px; /* Pulls title closer */
+    }
+    
+    .thumbnail {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.02); /* Ocultar posibles bordes negros de yt */
+    }
+
+    .loader-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .loader-ring {
-      width: 60px;
-      height: 60px;
+      width: 52px;
+      height: 52px;
       position: relative;
     }
     .loader-ring::before {
@@ -119,7 +148,10 @@ try {
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
     .loader-ring::after {
       content: "";
@@ -127,7 +159,7 @@ try {
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 2px solid transparent;
+      border: 3px solid transparent;
       border-top-color: #EB3333;
       animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
     }
@@ -188,7 +220,14 @@ try {
   <div class="vignette"></div>
 
   <div class="content">
-    <div class="loader-ring" id="spinner"></div>
+    
+    <div class="thumbnail-wrapper">
+      <img src={thumbnailUrl} alt="Video Thumbnail" class="thumbnail" />
+      <div class="loader-overlay" id="spinner-container">
+        <div class="loader-ring" id="spinner"></div>
+      </div>
+    </div>
+
     <div>
       <h1 class="title">{videoTitle}</h1>
       <p class="subtitle" id="status-text">Abriendo YouTube...</p>
@@ -245,10 +284,10 @@ try {
       window.location.href = appUrl;
 
       // 2. Fallback de seguridad si el OS falla en abrir la App después de 2.5s
-      setTimeout(() => {
+        setTimeout(() => {
         fallbackLinkBtn.style.display = 'block';
         statusText.innerText = "¿No redirigió automáticamente?";
-        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('spinner-container').style.display = 'none';
         
         // Auto-click the web redirect after another 1s delay if user does nothing
         setTimeout(triggerWebRedirect, 1500);

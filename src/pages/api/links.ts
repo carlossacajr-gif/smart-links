@@ -18,8 +18,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         const { url, alias, custom_title, custom_description, custom_image } = await request.json();
 
-        if (!url || !url.includes("youtu")) {
-            return new Response(JSON.stringify({ error: "Invalid YouTube URL" }), { status: 400 });
+        if (!url || !url.startsWith("http")) {
+            return new Response(JSON.stringify({ error: "URL inválida. Debe incluir http o https." }), { status: 400 });
         }
 
         // Insertar en Supabase. El ID y el created_at se generan solos por PG.

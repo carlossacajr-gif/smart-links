@@ -7,6 +7,33 @@ import QRCode from "react-qr-code";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Toaster, toast } from 'sonner';
 
+// Utility functions for UI
+const getDomainInfo = (url: string) => {
+    try {
+        const u = new URL(url);
+        const host = u.hostname.replace('www.', '');
+        if (host.includes('youtube.com') || host.includes('youtu.be')) return { name: 'YouTube', icon: Youtube, color: 'text-[#EB3333]', bg: 'bg-[#EB3333]/10' };
+        if (host.includes('twitter.com') || host.includes('x.com') || host.includes('t.co')) return { name: 'X/Twitter', icon: LinkIcon, color: 'text-zinc-900', bg: 'bg-zinc-100' };
+        if (host.includes('amazon.')) return { name: 'Amazon', icon: LinkIcon, color: 'text-slate-700', bg: 'bg-slate-100' };
+        if (host.includes('instagram.com')) return { name: 'Instagram', icon: LinkIcon, color: 'text-pink-600', bg: 'bg-pink-50' };
+        return { name: host, icon: LinkIcon, color: 'text-zinc-500', bg: 'bg-zinc-100' };
+    } catch {
+        return { name: 'Enlace', icon: LinkIcon, color: 'text-zinc-500', bg: 'bg-zinc-100' };
+    }
+};
+
+const getThumbnail = (link: any) => {
+    if (link.custom_image) return link.custom_image;
+    try {
+        const u = new URL(link.original_url);
+        if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+            const match = link.original_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+            if (match && match[1]) return `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg`;
+        }
+    } catch { }
+    return null;
+};
+
 export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) {
     const [links, setLinks] = useState(initialLinks);
     const [url, setUrl] = useState('');
@@ -17,7 +44,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const theme = 'light';
     const [activeQrId, setActiveQrId] = useState<string | null>(null);
     const [activeChartId, setActiveChartId] = useState<string | null>(null);
-    const [chartData, setChartData] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<any>(null);
     const [chartLoading, setChartLoading] = useState(false);
 
     // Modal y Selección
@@ -56,8 +83,8 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
         setError(null);
 
         try {
-            if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
-                throw new Error('Solo se permiten enlaces de YouTube');
+            if (!url.startsWith('http')) {
+                throw new Error('La URL debe comenzar con http o https');
             }
             const finalAlias = alias.trim() || generateAlias();
             const res = await fetch('/api/links', {
@@ -153,11 +180,11 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             if (res.ok && data.data) {
                 setChartData(data.data);
             } else {
-                setChartData([]);
+                setChartData(null);
             }
         } catch (e) {
             console.error(e);
-            setChartData([]);
+            setChartData(null);
         } finally {
             setChartLoading(false);
         }
@@ -187,10 +214,10 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-8 border-b border-zinc-200/60 gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-semibold text-zinc-900 tracking-tight flex items-center gap-3">
-                        Revenue Engine
+                        Smart Links
                     </h2>
                     <p className="text-[15px] text-zinc-500 mt-2 leading-relaxed">
-                        Convierte tu contenido en un sistema de crecimiento. Gestiona enlaces, enriquece leads y monitorea el ROI.
+                        Potencia cada clic. Centraliza tus enlaces y mide el impacto de tu contenido.
                     </p>
                 </div>
 
@@ -334,11 +361,11 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                             </button>
 
                             <div className="mb-8 pr-8">
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EB3333]/10 border border-[#EB3333]/20 mb-4">
-                                    <Plus className="w-3 h-3 text-[#EB3333]" />
-                                    <span className="text-[10px] font-bold text-[#EB3333] uppercase tracking-widest">Nuevo Saca Link</span>
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/5 border border-zinc-900/10 mb-4">
+                                    <Plus className="w-3 h-3 text-zinc-900" />
+                                    <span className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest">Nuevo Smart Link</span>
                                 </div>
-                                <h2 className="text-2xl font-display font-semibold transition-colors text-zinc-900 tracking-tight">Potenciar URL</h2>
+                                <h2 className="text-2xl font-display font-semibold transition-colors text-zinc-900 tracking-tight">Crear Enlace</h2>
                             </div>
 
                             <form onSubmit={(e) => {
@@ -347,20 +374,20 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                 });
                             }} className="space-y-6">
                                 <div className="group">
-                                    <label className="block text-[10px] font-bold tracking-[0.14em] text-zinc-500 mb-2 transition-colors group-focus-within:text-[#EB3333] uppercase">
-                                        Original YouTube URL
+                                    <label className="block text-[10px] font-bold tracking-[0.14em] text-zinc-500 mb-2 transition-colors group-focus-within:text-zinc-900 uppercase">
+                                        URL de Destino
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <Youtube className="h-5 w-5 text-zinc-400 group-focus-within:text-[#EB3333] transition-colors" />
+                                            <LinkIcon className="h-5 w-5 text-zinc-400 group-focus-within:text-zinc-900 transition-colors" />
                                         </div>
                                         <input
                                             type="url"
                                             required
                                             value={url}
                                             onChange={(e) => setUrl(e.target.value)}
-                                            className="block w-full pl-[3.25rem] pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-[1rem] text-[14px] text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#EB3333]/50 focus:ring-4 focus:ring-[#EB3333]/10 transition-all font-medium"
-                                            placeholder="https://youtu.be/..."
+                                            className="block w-full pl-[3.25rem] pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-[1rem] text-[14px] text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900/50 focus:ring-4 focus:ring-zinc-900/5 transition-all font-medium"
+                                            placeholder="https://ejemplo.com/recurso"
                                         />
                                     </div>
                                 </div>
@@ -482,16 +509,23 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
-                        {/* Selected All Header */}
+                        {/* Header Inteligente: "Tus enlaces" o "Seleccionar Todos" */}
                         {links.length > 0 && (
-                            <div className="flex items-center px-6 py-3 bg-white/50 border border-zinc-200 rounded-2xl mb-2 shadow-sm">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedLinks.length === links.length}
-                                    onChange={(e) => handleSelectAll(e.target.checked)}
-                                    className="w-4 h-4 rounded border-zinc-300 text-[#EB3333] focus:ring-[#EB3333] cursor-pointer"
-                                />
-                                <span className="ml-4 text-sm font-semibold text-zinc-500">Seleccionar todos los {links.length} enlaces</span>
+                            <div className="flex items-center justify-between px-2 mb-2">
+                                <h3 className="text-lg font-display font-semibold text-zinc-900 tracking-tight">Tus enlaces</h3>
+
+                                {selectedLinks.length > 0 && (
+                                    <div className="flex items-center animate-in fade-in zoom-in duration-300">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedLinks.length === links.length}
+                                            onChange={(e) => handleSelectAll(e.target.checked)}
+                                            className="w-4 h-4 rounded border-zinc-300 text-[#EB3333] focus:ring-[#EB3333] cursor-pointer"
+                                            id="select-all-top"
+                                        />
+                                        <label htmlFor="select-all-top" className="ml-2 text-sm font-semibold text-zinc-600 cursor-pointer">Seleccionar {links.length}</label>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -506,8 +540,8 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         layout
                                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 35, mass: 0.8 }}
                                         key={link.id}
                                         className={cn(
                                             "group flex flex-col p-5 md:p-6 bg-white border rounded-2xl transition-all shadow-sm hover:shadow-md",
@@ -515,9 +549,9 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                         )}
                                     >
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full h-full gap-6">
-                                            <div className="flex items-start gap-4 flex-1 overflow-hidden">
-                                                {/* Checkbox Individual */}
-                                                <div className="pt-1.5 flex-shrink-0">
+                                            <div className="flex items-start gap-4 flex-1 min-w-0">
+                                                {/* Checkbox Individual (Visible on hover or seleted) */}
+                                                <div className={cn("pt-4 flex-shrink-0 transition-opacity duration-300", selectedLinks.includes(link.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedLinks.includes(link.id)}
@@ -526,20 +560,45 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     />
                                                 </div>
 
-                                                <div className="flex flex-col gap-2 min-w-0 pr-6">
-                                                    <div className="flex items-center gap-3 mb-2">
+                                                {/* Thumbnail/Icon */}
+                                                <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-zinc-100 rounded-xl overflow-hidden border border-black/5 relative flex items-center justify-center">
+                                                    {getThumbnail(link) ? (
+                                                        <img src={getThumbnail(link)} alt="Thumbnail" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className={cn("w-full h-full flex items-center justify-center", getDomainInfo(link.original_url).bg)}>
+                                                            {(() => {
+                                                                const DomainIcon = getDomainInfo(link.original_url).icon;
+                                                                return <DomainIcon className={cn("w-6 h-6 opacity-50", getDomainInfo(link.original_url).color)} />;
+                                                            })()}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex flex-col gap-1 min-w-0 pr-2 pt-1">
+                                                    <div className="flex items-center gap-3">
                                                         <a
                                                             href={shortUrl}
                                                             target="_blank"
                                                             rel="noreferrer"
-                                                            className="text-[#EB3333] hover:text-[#D12B2B] font-mono text-lg truncate font-medium flex items-center gap-2 transition-colors relative"
+                                                            className="text-zinc-900 hover:text-black font-display font-bold text-lg sm:text-xl truncate flex items-center gap-2 transition-colors relative"
                                                         >
-                                                            <span className="text-[#EB3333]/50">/</span>{link.alias}
-                                                            <ExternalLink className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                                                            {link.custom_title || link.alias}
+                                                            <ExternalLink className="w-4 h-4 text-zinc-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
                                                         </a>
                                                     </div>
-                                                    <p className="text-zinc-500 text-sm truncate font-medium flex items-center gap-2 bg-black/5 w-max max-w-full px-3 py-1.5 rounded-lg border border-black/5">
-                                                        <Youtube className="w-4 h-4 text-[#EB3333]/90 flex-shrink-0" /> {truncateUrl(link.original_url)}
+
+                                                    <div className="flex items-center gap-2 text-sm text-[#EB3333] font-mono font-medium truncate mb-1">
+                                                        <span className="text-zinc-400 font-sans text-xs">Alias:</span>
+                                                        <span className="opacity-50">/</span>{link.alias}
+                                                    </div>
+
+                                                    <p className="text-zinc-500 text-xs sm:text-sm truncate font-medium flex items-center gap-1.5 bg-black/5 w-max max-w-full px-2.5 py-1 rounded-lg border border-black/5">
+                                                        {(() => {
+                                                            const info = getDomainInfo(link.original_url);
+                                                            const DomainIcon = info.icon;
+                                                            return <DomainIcon className={cn("w-3.5 h-3.5 flex-shrink-0", info.color)} />;
+                                                        })()}
+                                                        <span className="truncate">{truncateUrl(link.original_url)}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -622,9 +681,9 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                     initial={{ opacity: 0, height: 0 }}
                                                     animate={{ opacity: 1, height: 'auto' }}
                                                     exit={{ opacity: 0, height: 0 }}
-                                                    className="overflow-hidden"
+                                                    transition={{ type: "spring", stiffness: 400, damping: 35, mass: 0.8 }}
                                                 >
-                                                    <div className="pt-8 mt-6 border-t border-zinc-200 flex flex-col items-center gap-6">
+                                                    <div className="pt-8 pb-4 px-2 mt-6 border-t border-zinc-200 flex flex-col items-center gap-6 overflow-hidden">
                                                         <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 flex-shrink-0">
                                                             <QRCode
                                                                 id={`qr-${link.id}`}
@@ -675,50 +734,91 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                             </div>
                                                         </div>
 
-                                                        <div className="h-[200px] w-full -ml-4">
+                                                        <div className="w-full -ml-4">
                                                             {chartLoading ? (
-                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                <div className="w-full h-[200px] flex items-center justify-center">
                                                                     <Loader2 className="w-6 h-6 animate-spin text-zinc-300" />
                                                                 </div>
-                                                            ) : chartData.length > 0 ? (
-                                                                <ResponsiveContainer width="100%" height="100%">
-                                                                    <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-                                                                        <defs>
-                                                                            <linearGradient id="colorClics" x1="0" y1="0" x2="0" y2="1">
-                                                                                <stop offset="5%" stopColor="#EB3333" stopOpacity={0.4} />
-                                                                                <stop offset="95%" stopColor="#EB3333" stopOpacity={0} />
-                                                                            </linearGradient>
-                                                                        </defs>
-                                                                        <XAxis
-                                                                            dataKey="date"
-                                                                            axisLine={false}
-                                                                            tickLine={false}
-                                                                            tick={{ fontSize: 11, fill: '#71717a' }}
-                                                                            dy={10}
-                                                                        />
-                                                                        <Tooltip
-                                                                            contentStyle={{
-                                                                                backgroundColor: '#ffffff',
-                                                                                borderColor: 'rgba(0,0,0,0.1)',
-                                                                                borderRadius: '12px',
-                                                                                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                                                                color: '#000'
-                                                                            }}
-                                                                            itemStyle={{ color: '#EB3333', fontWeight: 'bold' }}
-                                                                            labelStyle={{ color: '#71717a', marginBottom: '4px' }}
-                                                                        />
-                                                                        <Area
-                                                                            type="monotone"
-                                                                            dataKey="clics"
-                                                                            stroke="#EB3333"
-                                                                            strokeWidth={2}
-                                                                            fillOpacity={1}
-                                                                            fill="url(#colorClics)"
-                                                                        />
-                                                                    </AreaChart>
-                                                                </ResponsiveContainer>
+                                                            ) : chartData && chartData.timeline && chartData.timeline.length > 0 ? (
+                                                                <div className="flex flex-col gap-6 w-full ml-4">
+                                                                    <div className="h-[200px] w-full -ml-4">
+                                                                        <ResponsiveContainer width="100%" height="100%">
+                                                                            <AreaChart data={chartData.timeline} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                                                                                <defs>
+                                                                                    <linearGradient id="colorClics" x1="0" y1="0" x2="0" y2="1">
+                                                                                        <stop offset="5%" stopColor="#EB3333" stopOpacity={0.4} />
+                                                                                        <stop offset="95%" stopColor="#EB3333" stopOpacity={0} />
+                                                                                    </linearGradient>
+                                                                                </defs>
+                                                                                <XAxis
+                                                                                    dataKey="date"
+                                                                                    axisLine={false}
+                                                                                    tickLine={false}
+                                                                                    tick={{ fontSize: 11, fill: '#71717a' }}
+                                                                                    dy={10}
+                                                                                />
+                                                                                <Tooltip
+                                                                                    contentStyle={{
+                                                                                        backgroundColor: '#ffffff',
+                                                                                        borderColor: 'rgba(0,0,0,0.1)',
+                                                                                        borderRadius: '12px',
+                                                                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                                                                        color: '#000'
+                                                                                    }}
+                                                                                    itemStyle={{ color: '#EB3333', fontWeight: 'bold' }}
+                                                                                    labelStyle={{ color: '#71717a', marginBottom: '4px' }}
+                                                                                />
+                                                                                <Area
+                                                                                    type="monotone"
+                                                                                    dataKey="clics"
+                                                                                    stroke="#EB3333"
+                                                                                    strokeWidth={2}
+                                                                                    fillOpacity={1}
+                                                                                    fill="url(#colorClics)"
+                                                                                />
+                                                                            </AreaChart>
+                                                                        </ResponsiveContainer>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 pb-2 pr-4">
+                                                                        {/* Top Referers */}
+                                                                        <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 shadow-sm">
+                                                                            <h5 className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2"><MousePointerClick className="w-3.5 h-3.5" /> Top Orígenes</h5>
+                                                                            <div className="space-y-3">
+                                                                                {chartData.referers.map((r: any) => (
+                                                                                    <div key={r.name} className="flex items-center justify-between">
+                                                                                        <span className="text-sm font-medium text-zinc-900 flex items-center gap-2">
+                                                                                            {(() => {
+                                                                                                const info = getDomainInfo(`https://${r.name}`);
+                                                                                                const Icon = info.icon;
+                                                                                                return <Icon className={cn("w-4 h-4", info.color)} />;
+                                                                                            })()}
+                                                                                            {r.name}
+                                                                                        </span>
+                                                                                        <span className="text-sm font-bold text-zinc-600 bg-white border border-zinc-200 px-2 py-0.5 rounded-md shadow-sm">{r.count}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                                {chartData.referers.length === 0 && <p className="text-xs text-zinc-400">Sin datos de origen</p>}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Top Devices */}
+                                                                        <div className="bg-zinc-50 border border-zinc-200/60 rounded-2xl p-5 shadow-sm">
+                                                                            <h5 className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> Dispositivos</h5>
+                                                                            <div className="space-y-3">
+                                                                                {chartData.devices.map((d: any) => (
+                                                                                    <div key={d.name} className="flex items-center justify-between">
+                                                                                        <span className="text-sm font-medium text-zinc-900">{d.name}</span>
+                                                                                        <span className="text-sm font-bold text-zinc-600 bg-white border border-zinc-200 px-2 py-0.5 rounded-md shadow-sm">{d.count}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                                {chartData.devices.length === 0 && <p className="text-xs text-zinc-400">Sin datos de dispositivo</p>}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             ) : (
-                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                <div className="w-full h-[200px] flex items-center justify-center">
                                                                     <p className="text-zinc-500 text-sm">Sin datos suficientes.</p>
                                                                 </div>
                                                             )}

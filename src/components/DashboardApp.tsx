@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Copy, Plus, Activity, Youtube, Trash2, ExternalLink, Loader2, Link as LinkIcon, BarChart3, Check, QrCode, Download, X } from 'lucide-react';
+import { Copy, Plus, Activity, Youtube, Trash2, ExternalLink, Loader2, Link as LinkIcon, BarChart3, Check, QrCode, Download, X, MousePointerClick, Clock, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils/cn';
 import QRCode from "react-qr-code";
@@ -30,7 +30,21 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
     const [customImage, setCustomImage] = useState('');
     const [showAdvanced, setShowAdvanced] = useState(false);
 
+    // Progressive Disclosure: Load More
+    const LINKS_PER_PAGE = 6;
+    const [visibleCount, setVisibleCount] = useState(LINKS_PER_PAGE);
+
     const currentDomain = typeof window !== 'undefined' ? window.location.origin : '';
+
+    // Computed KPI Stats
+    const totalClicks = links.reduce((sum: number, l: any) => sum + (l.clicks?.[0]?.count || 0), 0);
+    const topPerformer = links.length > 0
+        ? links.reduce((top: any, l: any) => (l.clicks?.[0]?.count || 0) > (top.clicks?.[0]?.count || 0) ? l : top, links[0])
+        : null;
+    const recentLink = links.length > 0 ? links[0] : null;
+
+    // Truncation utility (Design Principle #4)
+    const truncateUrl = (url: string, max: number = 50) => url.length <= max ? url : url.slice(0, max) + '…';
 
     const generateAlias = () => {
         return Math.random().toString(36).substring(2, 8);
@@ -188,13 +202,62 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
 
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[14px] font-bold tracking-wide rounded-full transition-all active:scale-95 shadow-md shadow-[#EB3333]/20"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#EB3333] hover:bg-[#D12B2B] text-white text-[14px] font-bold tracking-wide rounded-full transition-all active:scale-[0.97] shadow-md shadow-[#EB3333]/20"
                     >
                         <Plus className="w-4 h-4" />
                         Crear Link
                     </button>
                 </div>
             </div>
+
+            {/* Bento Grid KPI Cards */}
+            {links.length > 0 && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-xl bg-[#EB3333]/10 flex items-center justify-center">
+                                <LinkIcon className="w-4 h-4 text-[#EB3333]" />
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Enlaces</span>
+                        </div>
+                        <div className="text-2xl font-bold text-zinc-900 tracking-tight">{links.length}</div>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                <MousePointerClick className="w-4 h-4 text-emerald-500" />
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Clics</span>
+                        </div>
+                        <div className="text-2xl font-bold text-zinc-900 tracking-tight">{totalClicks}</div>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                                <TrendingUp className="w-4 h-4 text-amber-500" />
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Top</span>
+                        </div>
+                        <div className="text-sm font-bold text-zinc-900 truncate font-mono">{topPerformer ? `/${topPerformer.alias}` : '—'}</div>
+                        <div className="text-[11px] text-zinc-400 mt-0.5">{topPerformer ? `${topPerformer.clicks?.[0]?.count || 0} clics` : ''}</div>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                <Clock className="w-4 h-4 text-blue-500" />
+                            </div>
+                            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Último</span>
+                        </div>
+                        <div className="text-sm font-bold text-zinc-900 truncate font-mono">{recentLink ? `/${recentLink.alias}` : '—'}</div>
+                        <div className="text-[11px] text-zinc-400 mt-0.5">
+                            {recentLink ? new Date(recentLink.created_at).toLocaleDateString('es', { day: 'numeric', month: 'short' }) : ''}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Bulk Actions Contextual Bar */}
             <AnimatePresence>
@@ -433,7 +496,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                         )}
 
                         <AnimatePresence mode="popLayout">
-                            {links.map((link) => {
+                            {links.slice(0, visibleCount).map((link) => {
                                 const shortUrl = `${currentDomain}/${link.alias}`;
                                 const clickCount = link.clicks && link.clicks[0] ? link.clicks[0].count : 0;
                                 const isCopied = copiedId === link.id;
@@ -476,7 +539,7 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                                         </a>
                                                     </div>
                                                     <p className="text-zinc-500 text-sm truncate font-medium flex items-center gap-2 bg-black/5 w-max max-w-full px-3 py-1.5 rounded-lg border border-black/5">
-                                                        <Youtube className="w-4 h-4 text-[#EB3333]/90" /> {link.original_url}
+                                                        <Youtube className="w-4 h-4 text-[#EB3333]/90 flex-shrink-0" /> {truncateUrl(link.original_url)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -668,6 +731,18 @@ export default function DashboardApp({ initialLinks }: { initialLinks: any[] }) 
                                 );
                             })}
                         </AnimatePresence>
+
+                        {/* Progressive Disclosure: Load More (Design Principle #3) */}
+                        {visibleCount < links.length && (
+                            <div className="flex justify-center pt-4">
+                                <button
+                                    onClick={() => setVisibleCount(prev => prev + LINKS_PER_PAGE)}
+                                    className="flex items-center gap-2 px-8 py-3 border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 text-sm font-semibold rounded-full transition-all active:scale-[0.97] shadow-sm hover:shadow-md"
+                                >
+                                    Cargar {Math.min(LINKS_PER_PAGE, links.length - visibleCount)} más de {links.length - visibleCount}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </motion.div>

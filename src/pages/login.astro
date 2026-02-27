@@ -2,18 +2,23 @@
 import Layout from '../layouts/Layout.astro';
 import LoginForm from '../components/LoginForm';
 
-// Si ya hay sesión en las cookies, redirigir al dashboard
-const { cookies, redirect } = Astro;
+// Importante para no permitir acceso a /login si ya hay sesión
+const { cookies } = Astro;
 const accessToken = cookies.get("sb-access-token");
 const refreshToken = cookies.get("sb-refresh-token");
 
 if (accessToken && refreshToken) {
-  return redirect("/dashboard");
+  return Astro.redirect("/dashboard");
 }
 ---
 
-<Layout title="Login">
-  <main className="min-h-screen flex items-center justify-center p-4">
-    <LoginForm client:load />
+<Layout title="Acceso a Plataforma">
+  <main class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Luz ambiente focalizada para el Login -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[800px] max-h-[800px] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none mix-blend-screen"></div>
+    
+    <div class="w-full relative z-10">
+      <LoginForm client:load />
+    </div>
   </main>
 </Layout>

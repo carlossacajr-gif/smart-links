@@ -1,65 +1,42 @@
 ---
+import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
 const { alias } = Astro.params;
 
-// 1. Buscar en BD
+// 1. Fetch de los datos del link desde DB by alias
 const { data: link, error } = await supabase
   .from('links')
   .select('*')
   .eq('alias', alias)
   .single();
 
-// 2. Si no existe, return 404
 if (error || !link) {
-  return new Response(null, {
-    status: 404,
-    statusText: 'Not found'
-  });
+  return new Response("Enlace no encontrado o inactivo.", { status: 404 });
 }
 
-// 3. Extraer Video ID de la URL
-// Maneja ambos formatos: youtu.be/ID o youtube.com/watch?v=ID
-let videoId = '';
+const targetUrl = link.original_url;
+
+// 2. Fetch metadata de YouTube usando OEmbed endpoint para obtener Título y Thumbnail.
+let videoTitle = "Abriendo Video...";
+let thumbnailUrl = "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=1000&auto=format&fit=crop";
+
 try {
-  const urlObj = new URL(link.original_url);
-  if (urlObj.hostname.includes('youtu.be')) {
-    videoId = urlObj.pathname.slice(1);
-  } else {
-    videoId = urlObj.searchParams.get('v') || '';
-  }
-} catch (e) {
-  console.error("Invalid URL format in DB", link.original_url);
-}
-
-// 4. Obtener Metadatos de YouTube (oEmbed) para SSR Social Cards
-let title = "Video de YouTube";
-let thumbnailUrl = "";
-
-if (videoId) {
-  try {
-    const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+  let videoIdMatch = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (videoIdMatch && videoIdMatch[1]) {
+    const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoIdMatch[1]}&format=json`);
     if (oembedRes.ok) {
       const oembedData = await oembedRes.json();
-      title = oembedData.title;
-      thumbnailUrl = oembedData.thumbnail_url;
+      videoTitle = oembedData.title;
+      // Tratar de obtener calidad máxima si es posible
+      thumbnailUrl = `https://i.ytimg.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
     }
-  } catch (e) {
-    console.error("Failed to fetch oEmbed metadata", e);
   }
+} catch (e) {
+  console.log("Error fetching youtube metadata for SSR", e);
 }
 
-// Si la API falla, usamos un fallback a la miniatura maxres
-if (!thumbnailUrl && videoId) {
-  thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-}
-
-// Props para enviar al cliente (para el script de Redir)
-const clientProps = {
-  id: link.id,
-  originalUrl: link.original_url,
-  videoId
-};
+// 3. User-Agent info (Client IP cannot be accurately fetched in edge without Cloudflare specific headers sometimes, so we rely on client-side JS for the track as requested).
 ---
 
 <!doctype html>
@@ -68,141 +45,219 @@ const clientProps = {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- SEO & Social Meta Tags (La razón de ser del SSR) -->
-  <title>{title}</title>
-  <meta name="description" content="Abre este video directamente en la App de YouTube." />
-  
-  <!-- Open Graph / Facebook / WhatsApp -->
+  <!-- SEO & Social Open Graph Tags -->
+  <title>{videoTitle}</title>
+  <meta property="og:title" content={videoTitle} />
   <meta property="og:type" content="video.other" />
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content="Toca aquí para ver este video en alta calidad desde la App de YouTube" />
   <meta property="og:image" content={thumbnailUrl} />
-  <meta property="og:url" content={Astro.url.href} />
+  <meta property="og:url" content={`https://smart-links-699.pages.dev/${alias}`} />
   
-  <!-- Twitter -->
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content={title} />
-  <meta name="twitter:description" content="Ver directo en la App" />
+  <meta name="twitter:title" content={videoTitle} />
   <meta name="twitter:image" content={thumbnailUrl} />
 
+  <!-- Preconnect para velocidad de imagen -->
+  <link rel="preconnect" href="https://i.ytimg.com">
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      background-color: #0A0A0B;
-      color: #FAFAFA;
-      font-family: system-ui, -apple-system, sans-serif;
-      margin: 0;
-      height: 100vh;
+    /* Estilos Zero-JS Nativos súper livianos para máxima velocidad */
+    body, html {
+      margin: 0; padding: 0; height: 100%; width: 100%;
+      background-color: #000;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
     }
+
+    /* Fondo Inmersivo 2026: Thumbnail Desenfocado + Overlay */
     .blur-bg {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: url('{{thumbnailUrl}}'); /* Inyectado dinámicamente abajo */
+      top: -10%; left: -10%; right: -10%; bottom: -10%;
+      background-image: url('{thumbnailUrl}');
       background-size: cover;
       background-position: center;
-      filter: blur(40px) brightness(0.3);
-      z-index: -1;
+      filter: blur(40px) brightness(0.4) saturate(1.5);
+      z-index: 1;
       transform: scale(1.1);
+      animation: breathe 10s ease-in-out infinite alternate;
     }
-    .loader-container {
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, transparent 20%, #000 120%);
+      z-index: 2;
+    }
+
+    .content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.5rem;
-      z-index: 10;
-      text-align: center;
-      padding: 0 1rem;
+      gap: 30px;
+      padding: 0 24px;
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.1);
+
+    /* Spinner 2026 Trend: Minimalista, Delgado y Magnético */
+    .loader-ring {
+      width: 60px;
+      height: 60px;
+      position: relative;
+    }
+    .loader-ring::before {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      inset: 0;
       border-radius: 50%;
-      border-top-color: #6366F1;
-      animation: spin 1s ease-in-out infinite;
+      border: 2px solid rgba(255, 255, 255, 0.1);
     }
-    .message {
-      font-weight: 500;
-      letter-spacing: -0.02em;
-      opacity: 0.9;
+    .loader-ring::after {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #fff;
+      animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
     }
-    .fallback-btn {
-      display: none; /* Se muestra via JS si pasa mucho tiempo */
-      margin-top: 2rem;
-      padding: 1rem 2rem;
-      background-color: #FFFFFF;
-      color: #000000;
-      text-decoration: none;
-      border-radius: 12px;
+
+    .title {
+      font-family: 'Clash Display', sans-serif;
+      font-size: 2rem;
       font-weight: 600;
-      font-size: 1.1rem;
-      box-shadow: 0 10px 25px rgba(255,255,255,0.1);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin: 0;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      max-width: 600px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;  
+      overflow: hidden;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-weight: 600;
+      animation: pulseText 2s infinite alternate;
     }
+
+    .fallback-btn {
+      display: none; /* Se activa mediante JS si la redirección nativa falla */
+      margin-top: 20px;
+      padding: 14px 28px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 100px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes breathe { 100% { transform: scale(1.15); } }
+    @keyframes fadeUp { 
+      0% { opacity: 0; transform: translateY(20px) scale(0.95); } 
+      100% { opacity: 1; transform: translateY(0) scale(1); } 
+    }
+    @keyframes pulseText { 100% { opacity: 0.4; } }
   </style>
 </head>
 <body>
-  <div class="blur-bg" style={`background-image: url('${thumbnailUrl}')`}></div>
-  
-  <div class="loader-container">
-    <div class="spinner"></div>
-    <div class="message">Abriendo YouTube...</div>
-    <a href={link.original_url} class="fallback-btn" id="fallback-btn">Continuar al video</a>
+
+  <div class="blur-bg"></div>
+  <div class="vignette"></div>
+
+  <div class="content">
+    <div class="loader-ring" id="spinner"></div>
+    <div>
+      <h1 class="title">{videoTitle}</h1>
+      <p class="subtitle" id="status-text">Abriendo YouTube...</p>
+    </div>
+    
+    <a href={targetUrl} id="fallback-link" class="fallback-btn">
+      Continuar al video
+    </a>
   </div>
 
-  <script define:vars={{ props: clientProps }}>
-    // Fase 4: Analíticas Asíncronas y Deep Linking de Cliente
-    const { id, originalUrl, videoId } = props;
-
-    // 1. Enviar click asíncrono a API propia
+  <script define:vars={{ targetUrl, linkId: link.id }}>
+    // 4. Analytics asíncronos (No bloqueantes)
     fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        linkId: id,
-        userAgent: navigator.userAgent,
-        os: getOS(),
-        referer: document.referrer
+      body: JSON.stringify({ 
+        linkId: linkId, 
+        userAgent: navigator.userAgent 
       })
-    }).catch(e => console.error("Analytics failure", e)); // No bloqueante
+    }).catch(console.error); // Fuego y olvido
 
-    // 2. Determinar OS
-    function getOS() {
-      const ua = navigator.userAgent || navigator.vendor || window.opera;
-      if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'iOS';
-      if (/android/i.test(ua)) return 'Android';
-      return 'Desktop';
-    }
+    // 5. Smart Redirect Engine (Mobile Device Detection)
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isAndroid = userAgent.indexOf("android") > -1;
+    const isIOS = /ipad|iphone|ipod/.test(userAgent) && !window.MSStream;
+    const isMobile = isAndroid || isIOS;
 
-    const os = getOS();
+    const fallbackLinkBtn = document.getElementById('fallback-link');
+    const statusText = document.getElementById('status-text');
 
-    // 3. Estrategia de Redirección (Escape Hatch)
-    setTimeout(() => {
-      if (os === 'iOS') {
-        window.location.href = `youtube://${videoId}`;
-      } else if (os === 'Android') {
-        window.location.href = `intent://${videoId}#Intent;package=com.google.android.youtube;scheme=vnd.youtube;end;`;
-      } else {
-        window.location.href = originalUrl;
+    const triggerWebRedirect = () => {
+       statusText.innerText = "Redirigiendo...";
+       window.location.replace(targetUrl);
+    };
+
+    if (isMobile) {
+      // Intentar "Romper" el navegador In-App forzando deep linking
+      let appUrl = targetUrl;
+      
+      if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
+         // Transformar url a intent/scheme de YouTube Nativo
+         const videoIdMatch = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/.*[?&]v=)([^&]+)/);
+         if (videoIdMatch && videoIdMatch[1]) {
+           const vidId = videoIdMatch[1];
+           if (isIOS) {
+             appUrl = `youtube://${vidId}`;
+           } else if (isAndroid) {
+             appUrl = `intent://www.youtube.com/watch?v=${vidId}#Intent;package=com.google.android.youtube;scheme=https;end`;
+           }
+         }
       }
 
-      // Si después de 2.5s seguimos aquí, y no se abrió la app nativa (ej. app no instalada o bloqueo rudo),
-      // mostramos el botón grande de fallback e intentamos la web nativa móvil como medida desesperada.
+      // 1. Intentar lanzar al OS target
+      window.location.href = appUrl;
+
+      // 2. Fallback de seguridad si el OS falla en abrir la App después de 2.5s
       setTimeout(() => {
-        document.getElementById('fallback-btn').style.display = 'inline-block';
-        window.location.href = originalUrl;
+        fallbackLinkBtn.style.display = 'block';
+        statusText.innerText = "¿No redirigió automáticamente?";
+        document.getElementById('spinner').style.display = 'none';
+        
+        // Auto-click the web redirect after another 1s delay if user does nothing
+        setTimeout(triggerWebRedirect, 1500);
       }, 2500);
 
-    }, 100); // 100ms de delay para asegurar que el tracking asíncrono arrancó
+    } else {
+      // Desktop: Simple redirect casi instantáneo
+      triggerWebRedirect();
+    }
   </script>
 </body>
 </html>
